@@ -39,18 +39,18 @@ it('shows the newest period first', function (): void {
 it('filters batches by company and status', function (): void {
     $a = Company::factory()->create(['name' => 'PT Alpha']);
     $b = Company::factory()->create(['name' => 'PT Beta']);
-    PayslipBatch::factory()->for($a)->create(['status' => PayslipBatchStatus::Draft]);
-    PayslipBatch::factory()->for($b)->create(['status' => PayslipBatchStatus::Done]);
+    $draft = PayslipBatch::factory()->for($a)->create(['status' => PayslipBatchStatus::Draft]);
+    $done = PayslipBatch::factory()->for($b)->create(['status' => PayslipBatchStatus::Done]);
 
     $user = User::factory()->create();
 
     $this->actingAs($user)->get("/dashboard?company_id={$a->id}")
-        ->assertSee('/payslip-batches/1', false)
-        ->assertDontSee('/payslip-batches/2', false);
+        ->assertSee("/payslip-batches/{$draft->id}\"", false)
+        ->assertDontSee("/payslip-batches/{$done->id}\"", false);
 
     $this->actingAs($user)->get('/dashboard?status=done')
-        ->assertDontSee('/payslip-batches/1', false)
-        ->assertSee('/payslip-batches/2', false);
+        ->assertDontSee("/payslip-batches/{$draft->id}\"", false)
+        ->assertSee("/payslip-batches/{$done->id}\"", false);
 });
 
 it('shows an empty state', function (): void {

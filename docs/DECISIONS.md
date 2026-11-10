@@ -333,7 +333,7 @@ Belum bisa dikerjakan tanpa akses user/server; prosedur lengkap ada di `docs/dep
 - Import ke DB production (butuh dump/akses read-only, D-013).
 - Paralel run 1 periode (butuh sample Excel asli, server, dan SMTP asli; pakai `ESLIP_MAIL_OVERRIDE_TO`).
 - Pengujian SMTP sungguhan per akun (D-035).
-- Pengujian migration & test suite di PostgreSQL (selama ini hanya SQLite, D-044).
+- ~~Pengujian migration & test suite di PostgreSQL~~ — selesai: migrate + seed dan 229 test hijau di PostgreSQL 16 lokal (D-044).
 - Template ND & LLAO (D-002, D-025).
 
 ## D-044 — Database aplikasi: PostgreSQL · accepted · Fase 2/9
@@ -347,3 +347,7 @@ Perbedaan perilaku yang ditangani:
   `lower(username)`, validasi unik memakai `App\Rules\UniqueUsername`, dan migration baru menambah unique index
   `lower(username)` untuk pgsql/sqlite.
 - Tipe `json` Postgres menyimpan teks apa adanya; D-011 (urutan label dari Template) tetap berlaku.
+- Diverifikasi di PostgreSQL 16 lokal: `migrate --seed` dan seluruh test suite hijau. Test tidak boleh
+  mengandalkan id hardcode (sequence Postgres tidak di-reset saat rollback transaksi test).
+- Menjalankan test ke Postgres: `DB_CONNECTION=pgsql DB_DATABASE=<db_test> php artisan test`
+  (pakai database terpisah; RefreshDatabase mengosongkan isinya).
