@@ -13,15 +13,13 @@ final class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Local development data only. Production data comes from `eslip:import-legacy`.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        User::factory()->superAdmin()->create([
+            'username' => 'superadmin',
+            'name' => 'Super Admin',
         ]);
     }
 }
