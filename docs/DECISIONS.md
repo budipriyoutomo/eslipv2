@@ -198,3 +198,35 @@ Import lama tidak memvalidasi (`_rules()` tidak pernah dipanggil di `proses()`),
 Baru: field nominal `nullable|numeric` (kosong → `0.00` via `App\Support\Money`), kecuali `take_home_pay` wajib.
 Teks di kolom nominal ditolak. `nik`, `name`, `email` wajib. Aritmetika memakai `brick/math` (scale 2, HALF_UP);
 float dari Excel dinormalisasi lewat `sprintf('%.6F')` sebelum dibulatkan.
+
+## D-027 — Header row & fixture sintetis · accepted (sementara) · Fase 5
+- Sample Excel asli belum tersedia. Fixture test dibuat on-the-fly (`tests/Support/PayslipSpreadsheet.php`)
+  dari mapping terverifikasi (D-005), dalam format `.xls` dan `.xlsx`. **Wajib diuji ulang dengan sample asli**
+  (anonim) sebelum paralel run Fase 9.
+- Membaca seperti loop lama: sheet pertama, mulai baris 1, berhenti di baris pertama yang kolom 1 (NIK) kosong.
+- Tambahan: bila baris 1 kolom 1 berisi teks `NIK` (case-insensitive), baris itu dianggap judul dan dilewati
+  (menjawab D-008 secara aman untuk kedua kemungkinan).
+- Sel formula dibaca nilai hasil hitungnya. NIK numerik disimpan sebagai string tanpa `.0`/notasi eksponen.
+
+## D-028 — Validasi file upload · accepted · Fase 5
+Plan menyebut `mimes:xls,xlsx`. Deteksi MIME file `.xls` (format CDF/OLE) tidak konsisten antar server
+(`application/vnd.ms-excel`, `application/CDFV2`, `application/octet-stream`), sehingga dipakai
+`extensions:xls,xlsx` + `max:10240`. Isi file divalidasi oleh PhpSpreadsheet yang **dibatasi ke reader Xls/Xlsx**
+(tidak jatuh ke reader CSV/HTML); file yang tidak bisa dibaca → error "File tidak bisa dibaca". File upload tidak
+disimpan (dibaca dari temp upload PHP), sama seperti lama yang menghapusnya setelah import.
+
+## D-029 — Warning import · accepted · Fase 5
+Warning tidak memblokir dan disimpan di kolom baru `payslip_batches.warnings` (json) supaya tetap tampil di
+halaman preview:
+- THP Excel ≠ total penerimaan − total potongan (sesuai plan).
+- NIK duplikat dalam satu file (lama tidak memeriksa; dua baris = dua email).
+Error validasi per baris memakai label PDF + nomor kolom, mis. `Baris 4 (NIK 1004): GAJI (kolom 5) harus berupa angka.`
+
+## D-030 — Manajemen data PT belum ada di plan · open · Fase 8
+Kode lama punya CRUD `Tmstbrand`. Plan tidak mencantumkan CRUD `companies`; data PT hanya datang dari
+`eslip:import-legacy`. Field baru (`mailer`, `from_address`, `pdf_password_field`, `logo_path`, `city`) tidak
+punya padanan di `tmstbrand`, jadi butuh layar edit. Usulan: tambahkan CRUD company (SuperAdmin/Admin) di Fase 8.
+Sementara itu `DatabaseSeeder` membuat 2 PT contoh (Standard & XFT, mailer `log`) untuk development.
+
+## D-031 — Hak upload · accepted · Fase 5
+Sesuai lama, semua role (termasuk `user`) boleh upload dan melihat preview batch.

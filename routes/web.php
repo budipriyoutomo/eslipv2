@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PayslipBatchController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,10 @@ Route::middleware('auth')->group(function (): void {
     Route::redirect('/', '/dashboard');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::resource('payslip-batches', PayslipBatchController::class)
+        ->only(['create', 'store', 'show'])
+        ->parameters(['payslip-batches' => 'batch']);
 
     Route::middleware('role:super_admin,admin')->group(function (): void {
         Route::resource('users', UserController::class)->except('show');

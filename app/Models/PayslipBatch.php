@@ -26,10 +26,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $total_rows
  * @property int $sent_count
  * @property int $failed_count
+ * @property list<string>|null $warnings
  */
 #[Fillable([
     'company_id', 'template_type', 'period', 'issued_at', 'source_filename',
-    'uploaded_by', 'status', 'total_rows', 'sent_count', 'failed_count',
+    'uploaded_by', 'status', 'total_rows', 'sent_count', 'failed_count', 'warnings',
 ])]
 final class PayslipBatch extends Model
 {
@@ -83,6 +84,7 @@ final class PayslipBatch extends Model
             'total_rows' => 'integer',
             'sent_count' => 'integer',
             'failed_count' => 'integer',
+            'warnings' => 'array',
         ];
     }
 }

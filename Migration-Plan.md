@@ -259,10 +259,10 @@ delivery_logs
 **Tests:** unit test per template (mapping, total potongan, urutan label earnings/deductions sesuai PDF lama).
 
 ### Fase 5 — Import Excel
-- [ ] `StorePayslipBatchRequest`: `company_id`, `period` (`date_format:Y-m`), `issued_at`, `file` (`mimes:xls,xlsx`, max 10MB).
-- [ ] `ImportPayslipBatch`: baca sheet pertama, berhenti di baris dengan kolom NIK kosong (sama seperti lama), validasi tiap baris, dan kumpulkan error per nomor baris.
-- [ ] Jika ada error, **tidak ada data yang disimpan** (DB transaction) dan tampilkan daftar error.
-- [ ] Halaman **preview** batch sebelum dikirim.
+- [x] `StorePayslipBatchRequest`: `company_id`, `period` (`date_format:Y-m`), `issued_at`, `file` (`mimes:xls,xlsx`, max 10MB). *(+ `template_type` opsional; `extensions` bukan `mimes`, D-028)*
+- [x] `ImportPayslipBatch`: baca sheet pertama, berhenti di baris dengan kolom NIK kosong (sama seperti lama), validasi tiap baris, dan kumpulkan error per nomor baris.
+- [x] Jika ada error, **tidak ada data yang disimpan** (DB transaction) dan tampilkan daftar error.
+- [x] Halaman **preview** batch sebelum dikirim.
 
 **Tests:** gunakan fixture `.xls` di `tests/Fixtures/` (minta sample asli yang sudah dianonimkan dari user, satu per template).
 
@@ -331,7 +331,7 @@ delivery_logs
 | 2. Schema & Models | ✅ | 25 test hijau (SQLite). Migrations belum diuji di MySQL/MariaDB. D-015…D-018. |
 | 3. Auth & Role | ✅ | 62 test hijau. Smoke test `php artisan serve` (login → dashboard → /users) OK. D-019…D-023. |
 | 4. Templates | 🟨 | Standard + XFT selesai, 114 test hijau. ND + LLAO tertunda (D-002, D-025). D-024…D-026. |
-| 5. Import Excel | ⬜ | |
+| 5. Import Excel | 🟨 | Selesai untuk Standard + XFT, 143 test hijau. Fixture masih sintetis; uji ulang dengan sample asli (D-027). D-027…D-031. |
 | 6. PDF | ⬜ | |
 | 7. Queue Email | ⬜ | |
 | 8. UI | ⬜ | |
