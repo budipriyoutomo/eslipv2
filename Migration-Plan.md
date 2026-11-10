@@ -244,11 +244,11 @@ delivery_logs
 **Done when:** test factory dan relasi lulus.
 
 ### Fase 3 — Auth + Role + User management
-- [ ] Login dengan `username` + password.
-- [ ] `LegacyPasswordHasher`: jika `legacy_sha1 = true` dan `hash_equals(sha1($input), $stored)`, maka login sukses, password di-rehash dengan `Hash::make`, dan set `legacy_sha1 = false`.
-- [ ] Middleware `role:super_admin,admin`.
-- [ ] CRUD user (hanya SuperAdmin/Admin boleh delete, mengikuti logika `User::delete` lama).
-- [ ] Rate limit login.
+- [x] Login dengan `username` + password.
+- [x] `LegacyPasswordHasher`: jika `legacy_sha1 = true` dan `hash_equals(sha1($input), $stored)`, maka login sukses, password di-rehash dengan `Hash::make`, dan set `legacy_sha1 = false`. *(via custom user provider, D-019)*
+- [x] Middleware `role:super_admin,admin`.
+- [x] CRUD user (hanya SuperAdmin/Admin boleh delete, mengikuti logika `User::delete` lama). *(akses dipersempit, D-020)*
+- [x] Rate limit login.
 
 **Tests:** login normal, login legacy sha1 dan terbukti rehash, password salah, role denied.
 
@@ -329,7 +329,7 @@ delivery_logs
 |---|---|---|
 | 1. Setup | ✅ | Laravel 13.40, PHP 8.4.22, Pest 5.3, Larastan 3.14 (level 6), Pint. CI di `.github/workflows/ci.yml` (belum dijalankan; repo belum punya remote). Lihat `docs/DECISIONS.md` D-001…D-014. |
 | 2. Schema & Models | ✅ | 25 test hijau (SQLite). Migrations belum diuji di MySQL/MariaDB. D-015…D-018. |
-| 3. Auth & Role | ⬜ | |
+| 3. Auth & Role | ✅ | 62 test hijau. Smoke test `php artisan serve` (login → dashboard → /users) OK. D-019…D-023. |
 | 4. Templates | ⬜ | |
 | 5. Import Excel | ⬜ | |
 | 6. PDF | ⬜ | |

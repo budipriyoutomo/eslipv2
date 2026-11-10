@@ -136,3 +136,35 @@ dihapus (tidak dipakai; login dengan `username`).
 - FK `company_id` → `restrictOnDelete` (company dengan batch tidak bisa dihapus);
   `uploaded_by` → `nullOnDelete` (histori batch tetap ada walau user dihapus);
   `payslips` & `delivery_logs` → `cascadeOnDelete`.
+
+## D-019 — Login legacy sha1 via custom user provider · accepted · Fase 3
+`App\Auth\LegacyAwareUserProvider` (driver `legacy-eloquent` di `config/auth.php`) meng-override
+`validateCredentials()` dan `rehashPasswordIfRequired()`. User `legacy_sha1 = true` diverifikasi oleh
+`App\Support\LegacyPasswordHasher`, lalu password langsung di-rehash dengan `Hash::make` dan flag di-clear —
+semua dalam alur standar `Auth::attempt()`. Login lama menjalankan rule `trim` sebelum sha1, jadi input mentah
+dan input ter-trim sama-sama dicoba.
+
+## D-020 — Akses manajemen user dipersempit · accepted · Fase 3
+Lama: CRUD user terbuka untuk **semua role** (`$access = SuperAdmin, Admin, User`); hanya delete yang menolak
+role `User`. Artinya role `User` bisa membuat SuperAdmin (privilege escalation).
+Baru (sesuai plan, middleware `role:super_admin,admin`):
+- Role `user` tidak bisa mengakses `/users` sama sekali.
+- Admin hanya bisa memberi role `admin`/`user`, dan tidak bisa edit/hapus SuperAdmin.
+- Tidak ada yang bisa menghapus akunnya sendiri.
+Aturan di `App\Policies\UserPolicy`.
+
+## D-021 — Password plaintext di tabel `user` lama · open · Fase 9
+`User::create_action/update_action` lama menyimpan password **mentah** dari form (tanpa sha1), sementara login
+membandingkan `sha1(input)`. Akibatnya tabel `user` lama kemungkinan berisi campuran hash sha1 dan plaintext.
+Rencana `eslip:import-legacy`: nilai yang cocok pola sha1 (40 hex) → salin + `legacy_sha1 = true`;
+selain itu dianggap plaintext → langsung `Hash::make()` + `legacy_sha1 = false`. Verifikasi dengan dump production.
+Selain itu, datatables user lama mengekspos kolom `password` ke browser.
+
+## D-022 — Rate limit login · accepted · Fase 3
+5 percobaan gagal per kombinasi `username|IP` per 60 detik (gaya Breeze: hanya kegagalan yang dihitung, reset
+saat sukses). Diimplementasikan di `App\Http\Requests\Auth\LoginRequest`.
+
+## D-023 — UI auth custom minimal · accepted · Fase 3
+Laravel Breeze tidak dipakai (sudah digantikan starter kit sejak Laravel 12 dan membawa registrasi/reset email
+yang tidak dibutuhkan). Dipakai Blade + Tailwind v4 (Vite) minimal: login, logout, CRUD user.
+Tidak ada registrasi publik dan tidak ada reset password via email (admin yang reset).
