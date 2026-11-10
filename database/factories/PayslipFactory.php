@@ -19,20 +19,21 @@ final class PayslipFactory extends Factory
      */
     public function definition(): array
     {
+        // Field names shared by the Standard and XFT templates.
         $earnings = [
-            'gaji' => '5000000.00',
-            'lembur' => '250000.00',
-            'uangmakan' => '400000.00',
-            'transport' => '300000.00',
-            'pengmcu' => '0.00',
-            'penlain' => '0.00',
+            'base_salary' => '5000000.00',
+            'overtime' => '250000.00',
+            'meal_allowance' => '400000.00',
+            'transport_allowance' => '300000.00',
+            'mcu_refund' => '0.00',
+            'other_earnings' => '0.00',
         ];
         $deductions = [
-            'bpjsnakerjht' => '100000.00',
-            'bpjsnakerjp' => '50000.00',
-            'bpjssehat' => '50000.00',
-            'potmcu' => '0.00',
-            'potlain' => '0.00',
+            'bpjs_jht' => '100000.00',
+            'bpjs_jp' => '50000.00',
+            'bpjs_health' => '50000.00',
+            'mcu_deduction' => '0.00',
+            'other_deductions' => '0.00',
         ];
 
         return [

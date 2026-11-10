@@ -71,11 +71,11 @@ it('lets a batch override the company template', function (): void {
 
 it('casts payslip json and decimal columns', function (): void {
     $payslip = Payslip::factory()->create([
-        'earnings' => ['gaji' => '1234567.89'],
+        'earnings' => ['base_salary' => '1234567.89'],
         'take_home_pay' => 1234567.891,
     ])->fresh();
 
-    expect($payslip->earnings)->toBe(['gaji' => '1234567.89'])
+    expect($payslip->earnings)->toBe(['base_salary' => '1234567.89'])
         ->and($payslip->take_home_pay)->toBe('1234567.89')
         ->and($payslip->delivery_status)->toBe(DeliveryStatus::Pending)
         ->and($payslip->attendance)->toHaveKeys(['sick', 'absent', 'sudden_leave', 'present']);
@@ -83,12 +83,12 @@ it('casts payslip json and decimal columns', function (): void {
 
 it('looks up amounts in earnings then deductions', function (): void {
     $payslip = Payslip::factory()->make([
-        'earnings' => ['gaji' => '100.00'],
-        'deductions' => ['potlain' => '25.00'],
+        'earnings' => ['base_salary' => '100.00'],
+        'deductions' => ['other_deductions' => '25.00'],
     ]);
 
-    expect($payslip->amount('gaji'))->toBe('100.00')
-        ->and($payslip->amount('potlain'))->toBe('25.00')
+    expect($payslip->amount('base_salary'))->toBe('100.00')
+        ->and($payslip->amount('other_deductions'))->toBe('25.00')
         ->and($payslip->amount('bonus'))->toBe('0.00');
 });
 
