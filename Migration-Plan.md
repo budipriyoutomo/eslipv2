@@ -253,8 +253,8 @@ delivery_logs
 **Tests:** login normal, login legacy sha1 dan terbukti rehash, password salah, role denied.
 
 ### Fase 4 — Templates (Strategy)
-- [ ] Interface `PayslipTemplate` + 4 implementasi + `TemplateResolver`.
-- [ ] Lengkapi mapping kolom (bagian 4, isi semua `?`).
+- [x] Interface `PayslipTemplate` + 4 implementasi + `TemplateResolver`. *(Standard + XFT saja; ND/LLAO menunggu source/sample, D-025)*
+- [x] Lengkapi mapping kolom (bagian 4, isi semua `?`). *(lihat D-005, nama field baru D-024)*
 
 **Tests:** unit test per template (mapping, total potongan, urutan label earnings/deductions sesuai PDF lama).
 
@@ -330,7 +330,7 @@ delivery_logs
 | 1. Setup | ✅ | Laravel 13.40, PHP 8.4.22, Pest 5.3, Larastan 3.14 (level 6), Pint. CI di `.github/workflows/ci.yml` (belum dijalankan; repo belum punya remote). Lihat `docs/DECISIONS.md` D-001…D-014. |
 | 2. Schema & Models | ✅ | 25 test hijau (SQLite). Migrations belum diuji di MySQL/MariaDB. D-015…D-018. |
 | 3. Auth & Role | ✅ | 62 test hijau. Smoke test `php artisan serve` (login → dashboard → /users) OK. D-019…D-023. |
-| 4. Templates | ⬜ | |
+| 4. Templates | 🟨 | Standard + XFT selesai, 114 test hijau. ND + LLAO tertunda (D-002, D-025). D-024…D-026. |
 | 5. Import Excel | ⬜ | |
 | 6. PDF | ⬜ | |
 | 7. Queue Email | ⬜ | |

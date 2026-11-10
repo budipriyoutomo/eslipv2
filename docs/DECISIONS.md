@@ -168,3 +168,33 @@ saat sukses). Diimplementasikan di `App\Http\Requests\Auth\LoginRequest`.
 Laravel Breeze tidak dipakai (sudah digantikan starter kit sejak Laravel 12 dan membawa registrasi/reset email
 yang tidak dibutuhkan). Dipakai Blade + Tailwind v4 (Vite) minimal: login, logout, CRUD user.
 Tidak ada registrasi publik dan tidak ada reset password via email (admin yang reset).
+
+## D-024 — Nama field English di JSON earnings/deductions · accepted · Fase 4
+Sesuai konvensi plan bagian 7, nama lama hanya muncul di Template (komentar `columnMap()`) dan import legacy.
+
+| Lama | Baru | Grup |
+|---|---|---|
+| nik / nama / jabatan / email | `nik` / `name` / `position` / `email` | identitas |
+| gaji | `base_salary` | earning |
+| bonus (XFT) | `bonus` | earning |
+| svctetap / svcvariabel / target (Standard) | `fixed_service` / `variable_service` / `target` | earning |
+| lembur / uangmakan / transport | `overtime` / `meal_allowance` / `transport_allowance` | earning |
+| pengmcu / penlain | `mcu_refund` / `other_earnings` | earning |
+| bpjsnakerjht / bpjsnakerjp / bpjssehat | `bpjs_jht` / `bpjs_jp` / `bpjs_health` | deduction |
+| potmcu / pinalty (Standard) / potlain | `mcu_deduction` / `safety_shoes_penalty` / `other_deductions` | deduction |
+| ketpen / ketpot | `earning_note` / `deduction_note` | catatan |
+| sakit / alpha / cutdak / hadir | `sick` / `absent` / `sudden_leave` / `present` | `attendance` |
+| thp | `take_home_pay` | kolom |
+
+Label PDF di `lang/id/payslip.php`. Urutan label = urutan `earningFields()` / `deductionFields()` (D-011).
+
+## D-025 — Template ND & LLAO belum diimplementasi · accepted (sementara) · Fase 4
+Disetujui user: kerjakan Standard + XFT dulu. Enum `PayslipTemplateType::Nd/Llao` tetap ada, tetapi
+`TemplateResolver::resolve()` melempar `UnsupportedTemplateException` dan `supported()` hanya mengembalikan
+Standard + XFT (dipakai form upload Fase 5). Tambah template = 1 class + 1 baris di `TemplateResolver::TEMPLATES`.
+
+## D-026 — Nominal kosong dianggap 0 · accepted · Fase 4
+Import lama tidak memvalidasi (`_rules()` tidak pernah dipanggil di `proses()`), dan sel kosong tersimpan sebagai 0.
+Baru: field nominal `nullable|numeric` (kosong → `0.00` via `App\Support\Money`), kecuali `take_home_pay` wajib.
+Teks di kolom nominal ditolak. `nik`, `name`, `email` wajib. Aritmetika memakai `brick/math` (scale 2, HALF_UP);
+float dari Excel dinormalisasi lewat `sprintf('%.6F')` sebelum dibulatkan.
