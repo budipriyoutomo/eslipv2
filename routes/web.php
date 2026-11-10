@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeliveryLogController;
 use App\Http\Controllers\PayslipBatchController;
 use App\Http\Controllers\PayslipBatchDispatchController;
 use App\Http\Controllers\PayslipPdfController;
@@ -21,7 +23,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::resource('payslip-batches', PayslipBatchController::class)
-        ->only(['create', 'store', 'show'])
+        ->only(['create', 'store', 'show', 'destroy'])
         ->parameters(['payslip-batches' => 'batch']);
 
     Route::post('/payslip-batches/{batch}/send', [PayslipBatchDispatchController::class, 'send'])
@@ -33,7 +35,10 @@ Route::middleware('auth')->group(function (): void {
         ->scopeBindings()
         ->name('payslip-batches.payslips.pdf');
 
+    Route::get('/delivery-logs', [DeliveryLogController::class, 'index'])->name('delivery-logs.index');
+
     Route::middleware('role:super_admin,admin')->group(function (): void {
         Route::resource('users', UserController::class)->except('show');
+        Route::resource('companies', CompanyController::class)->except('show');
     });
 });

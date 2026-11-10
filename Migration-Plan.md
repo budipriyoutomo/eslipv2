@@ -288,10 +288,11 @@ delivery_logs
 **Tests:** `Mail::fake()`, `Queue::fake()`, sukses, gagal lalu status failed, serta retry.
 
 ### Fase 8 — UI
-- [ ] Dashboard: daftar batch (company, periode, total, terkirim, gagal).
-- [ ] Form upload batch.
-- [ ] Detail batch: tabel payslip + status + preview PDF + resend.
-- [ ] Riwayat pengiriman (dari `delivery_logs`).
+- [x] Dashboard: daftar batch (company, periode, total, terkirim, gagal).
+- [x] Form upload batch.
+- [x] Detail batch: tabel payslip + status + preview PDF + resend.
+- [x] Riwayat pengiriman (dari `delivery_logs`).
+- [x] *(tambahan)* CRUD PT (D-030, D-039) dan hapus batch draft (D-040).
 
 ### Fase 9 — Migrasi Data & Cutover
 - [ ] `eslip:import-legacy` (bagian 5).
@@ -334,5 +335,5 @@ delivery_logs
 | 5. Import Excel | 🟨 | Selesai untuk Standard + XFT, 143 test hijau. Fixture masih sintetis; uji ulang dengan sample asli (D-027). D-027…D-031. |
 | 6. PDF | ✅ | 164 test hijau. Enkripsi diverifikasi dengan `pdftotext`. Library & password = default (D-032), konfirmasi user. D-032…D-034. |
 | 7. Queue Email | ✅ | 184 test hijau. E2E nyata: worker `database` + mailer `log`, 3/3 terkirim, file temp terhapus. Hosting & SMTP per PT masih asumsi (D-035). D-035…D-038. |
-| 8. UI | ⬜ | |
+| 8. UI | ✅ | 216 test hijau. Smoke test semua halaman di server lokal: 200. D-039, D-040. |
 | 9. Migrasi & Cutover | ⬜ | |

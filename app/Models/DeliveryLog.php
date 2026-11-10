@@ -36,6 +36,52 @@ final class DeliveryLog extends Model
     }
 
     /**
+     * True for history rows copied from the legacy `tstatus` table (no payslip, data in `context`).
+     * Legacy context keys: source, nik, name, period, company, issued_at (see eslip:import-legacy).
+     */
+    public function isLegacy(): bool
+    {
+        return $this->payslip_id === null;
+    }
+
+    public function nik(): ?string
+    {
+        return $this->payslip !== null ? $this->payslip->nik : $this->contextString('nik');
+    }
+
+    public function employeeName(): ?string
+    {
+        return $this->payslip !== null ? $this->payslip->name : $this->contextString('name');
+    }
+
+    public function companyName(): ?string
+    {
+        return $this->payslip !== null ? $this->payslip->batch->company->name : $this->contextString('company');
+    }
+
+    public function periodLabel(): ?string
+    {
+        if ($this->payslip !== null) {
+            return $this->payslip->batch->period->translatedFormat('F Y');
+        }
+
+        $period = $this->contextString('period');
+
+        return $period === null ? null : rescue(
+            fn (): string => CarbonImmutable::parse($period)->translatedFormat('F Y'),
+            $period,
+            report: false,
+        );
+    }
+
+    private function contextString(string $key): ?string
+    {
+        $value = $this->context[$key] ?? null;
+
+        return is_scalar($value) ? (string) $value : null;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

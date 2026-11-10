@@ -18,7 +18,9 @@
                 <a href="{{ route('dashboard') }}" class="font-semibold text-slate-900">{{ config('app.name') }}</a>
                 <a href="{{ route('dashboard') }}" @class(['text-sm', 'font-medium text-slate-900' => request()->routeIs('dashboard'), 'text-slate-500 hover:text-slate-900' => ! request()->routeIs('dashboard')])>Dashboard</a>
                 <a href="{{ route('payslip-batches.create') }}" @class(['text-sm', 'font-medium text-slate-900' => request()->routeIs('payslip-batches.*'), 'text-slate-500 hover:text-slate-900' => ! request()->routeIs('payslip-batches.*')])>Upload</a>
+                <a href="{{ route('delivery-logs.index') }}" @class(['text-sm', 'font-medium text-slate-900' => request()->routeIs('delivery-logs.*'), 'text-slate-500 hover:text-slate-900' => ! request()->routeIs('delivery-logs.*')])>Riwayat</a>
                 @can('viewAny', App\Models\User::class)
+                    <a href="{{ route('companies.index') }}" @class(['text-sm', 'font-medium text-slate-900' => request()->routeIs('companies.*'), 'text-slate-500 hover:text-slate-900' => ! request()->routeIs('companies.*')])>PT</a>
                     <a href="{{ route('users.index') }}" @class(['text-sm', 'font-medium text-slate-900' => request()->routeIs('users.*'), 'text-slate-500 hover:text-slate-900' => ! request()->routeIs('users.*')])>User</a>
                 @endcan
             </div>

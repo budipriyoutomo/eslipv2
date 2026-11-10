@@ -58,6 +58,26 @@
         </div>
     @endif
 
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('payslip-batches.show', $batch) }}" @class(['rounded-full px-3 py-1', 'bg-slate-900 text-white' => $statusFilter === null, 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50' => $statusFilter !== null])>Semua</a>
+            @foreach ($statuses as $option)
+                <a href="{{ route('payslip-batches.show', [$batch, 'status' => $option->value]) }}" @class(['rounded-full px-3 py-1', 'bg-slate-900 text-white' => $statusFilter === $option, 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50' => $statusFilter !== $option])>{{ $option->label() }}</a>
+            @endforeach
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="{{ route('delivery-logs.index', ['batch' => $batch->id]) }}" class="text-slate-600 underline hover:text-slate-900">Riwayat pengiriman batch ini</a>
+            @if ($canDelete)
+                <form method="POST" action="{{ route('payslip-batches.destroy', $batch) }}"
+                      onsubmit="return confirm({{ Illuminate\Support\Js::from('Hapus batch draft ini beserta '.$batch->total_rows.' slip?') }})">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-600 hover:text-red-800">Hapus batch</button>
+                </form>
+            @endif
+        </div>
+    </div>
+
     <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">

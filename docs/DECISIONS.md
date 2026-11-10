@@ -222,7 +222,7 @@ halaman preview:
 - NIK duplikat dalam satu file (lama tidak memeriksa; dua baris = dua email).
 Error validasi per baris memakai label PDF + nomor kolom, mis. `Baris 4 (NIK 1004): GAJI (kolom 5) harus berupa angka.`
 
-## D-030 — Manajemen data PT belum ada di plan · open · Fase 8
+## D-030 — Manajemen data PT belum ada di plan · accepted (dikerjakan di Fase 8, lihat D-039) · Fase 8
 Kode lama punya CRUD `Tmstbrand`. Plan tidak mencantumkan CRUD `companies`; data PT hanya datang dari
 `eslip:import-legacy`. Field baru (`mailer`, `from_address`, `pdf_password_field`, `logo_path`, `city`) tidak
 punya padanan di `tmstbrand`, jadi butuh layar edit. Usulan: tambahkan CRUD company (SuperAdmin/Admin) di Fase 8.
@@ -286,3 +286,23 @@ attempt, sehingga `tries = 3` membuat job gagal hanya karena antre. Maka dipakai
 Subject `E-Slip {nama PT}` (sama dengan lama). Body `Dear {nama karyawan}, Berikut E-Slip Gaji Bulan {Oktober 2026}.`
 (lama menyapa dengan alamat email, D-009) + petunjuk password bila PDF diproteksi + penutup nama PT.
 Tersedia versi HTML dan teks. From = `companies.from_address` / `from_name`.
+
+## D-039 — UI Fase 8 · accepted · Fase 8
+UI memakai Blade + Tailwind (tanpa Livewire/yajra): tabel server-side dengan paginasi + filter via query string.
+Cukup untuk volume batch/slip saat ini; tidak ada query di Blade (relasi di-eager-load di controller).
+- **Dashboard** (`/dashboard`): daftar batch (PT, periode, template, total, terkirim, gagal, status, uploader),
+  filter PT & status, periode terbaru di atas.
+- **Detail batch**: filter status slip, link ke riwayat batch, hapus batch.
+- **Riwayat pengiriman** (`/delivery-logs`): setiap attempt kirim, termasuk baris histori `tstatus` lama
+  (`payslip_id` null) yang datanya dibaca dari `context` (kunci: `nik`, `name`, `period`, `company`) dan diberi label
+  "sistem lama". Cari NIK/nama/email, filter status & batch. Semua role boleh melihat (lama: `Tstatus` terbuka
+  untuk semua role).
+- **CRUD PT** (`/companies`, SuperAdmin/Admin): header slip (kode, nama, alamat, kota, telepon, logo),
+  template default, password PDF (`nik`/`email`/`none`), mailer (hanya mailer yang terdefinisi di
+  `config/mail.php`, tanpa `failover`/`roundrobin`), email & nama pengirim. Logo PNG/JPG ≤ 1 MB disimpan di disk
+  privat `logos/`. PT yang sudah punya batch tidak bisa dihapus.
+
+## D-040 — Hapus batch · accepted · Fase 8
+Padanan `deldata`/`delete` lama (hanya role selain `User`). Baru: hanya batch berstatus **draft** yang bisa dihapus
+(belum ada email terkirim), payslip ikut terhapus (cascade). Batch `processing`/`done` tidak bisa dihapus agar
+histori pengiriman tetap utuh.
