@@ -75,7 +75,7 @@ Aplikasi e-slip gaji dengan alur berikut:
 ## 3. Target Stack
 
 - PHP **8.4**, Laravel **13**
-- DB: MySQL/MariaDB (sama dengan lama)
+- DB: PostgreSQL (diubah dari MySQL/MariaDB atas permintaan user, lihat D-044). DB lama tetap MySQL sebagai sumber import.
 - Excel: `phpoffice/phpspreadsheet`, agar file `.xls` lama dan `.xlsx` sama-sama didukung. (`openspout` lebih ringan, tetapi tidak membaca `.xls`.)
 - PDF: `setasign/fpdf` + `setasign/fpdi` (port layout lama 1:1) dengan proteksi password via `setasign/fpdi-protection` atau library sejenis yang kompatibel PHP 8.4. Catat pilihan final di `DECISIONS.md`.
 - Queue: driver `database` (cukup untuk skala ini). Siapkan Supervisor config contoh.

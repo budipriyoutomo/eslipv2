@@ -23,6 +23,15 @@ it('logs in with username and password', function (): void {
     $this->assertAuthenticatedAs($user);
 });
 
+it('matches the username case-insensitively', function (): void {
+    $user = User::factory()->create(['username' => 'Budi']);
+
+    $this->post('/login', ['username' => 'bUDI', 'password' => 'password'])
+        ->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user);
+});
+
 it('logs in a legacy sha1 user and rehashes the password', function (): void {
     $user = User::factory()->legacySha1('rahasia123')->create(['username' => 'legacy']);
 

@@ -112,7 +112,7 @@ Kolom `user`: `id, username, password(varchar 50, sha1), role enum('Admin','User
 - Laravel Boost (disarankan oleh `CLAUDE.md`/`AGENTS.md` bawaan skeleton) tidak dipasang; tidak diminta plan.
 - Ekstensi `intl` belum aktif di PHP lokal; wajib ada di server (lihat checklist Fase 9). Kode tidak boleh
   bergantung pada `intl` di test lokal sampai ekstensi diaktifkan.
-- Test lokal & CI memakai SQLite in-memory; production MySQL/MariaDB.
+- Test lokal & CI memakai SQLite in-memory; production PostgreSQL (D-044, sebelumnya MySQL/MariaDB).
 - Timezone default `Asia/Jakarta`, locale `id`.
 
 ## D-015 — Kolom enum disimpan sebagai string · accepted · Fase 2
@@ -333,5 +333,17 @@ Belum bisa dikerjakan tanpa akses user/server; prosedur lengkap ada di `docs/dep
 - Import ke DB production (butuh dump/akses read-only, D-013).
 - Paralel run 1 periode (butuh sample Excel asli, server, dan SMTP asli; pakai `ESLIP_MAIL_OVERRIDE_TO`).
 - Pengujian SMTP sungguhan per akun (D-035).
-- Pengujian migration di MySQL/MariaDB (selama ini hanya SQLite).
+- Pengujian migration & test suite di PostgreSQL (selama ini hanya SQLite, D-044).
 - Template ND & LLAO (D-002, D-025).
+
+## D-044 — Database aplikasi: PostgreSQL · accepted · Fase 2/9
+Atas permintaan user, DB aplikasi baru memakai **PostgreSQL** (bukan MySQL/MariaDB seperti plan awal).
+DB lama tetap MySQL dan hanya dibaca oleh `eslip:import-legacy` (koneksi `legacy`, butuh `pdo_mysql` juga).
+Perbedaan perilaku yang ditangani:
+- **LIKE case-sensitive** di Postgres → pencarian (`/users`, `/delivery-logs`) memakai `whereLike()` yang
+  di-compile menjadi `ILIKE` di pgsql dan `LIKE` di MySQL/SQLite.
+- **Kolom `json` tidak bisa di-LIKE** di Postgres → pencarian histori lama memakai `context::text`.
+- **Username**: collation MySQL lama case-insensitive (login `Admin` = `admin`). Dipertahankan: login mencari
+  `lower(username)`, validasi unik memakai `App\Rules\UniqueUsername`, dan migration baru menambah unique index
+  `lower(username)` untuk pgsql/sqlite.
+- Tipe `json` Postgres menyimpan teks apa adanya; D-011 (urutan label dari Template) tetap berlaku.

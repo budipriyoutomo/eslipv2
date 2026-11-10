@@ -60,6 +60,7 @@ it('searches by NIK, name, email and legacy data', function (): void {
     $this->actingAs($user)->get('/delivery-logs?q=1001')->assertSee('Andi')->assertDontSee('Budi')->assertDontSee('Citra');
     $this->actingAs($user)->get('/delivery-logs?q=budi')->assertSee('Budi')->assertDontSee('Andi');
     $this->actingAs($user)->get('/delivery-logs?q=Citra')->assertSee('9001')->assertDontSee('Andi');
+    $this->actingAs($user)->get('/delivery-logs?q=cITRA')->assertSee('9001')->assertDontSee('Andi');
 });
 
 it('filters by status and batch', function (): void {

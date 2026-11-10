@@ -9,6 +9,7 @@ use App\Support\LegacyPasswordHasher;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Hashing\Hasher;
+use Illuminate\Support\Str;
 
 /**
  * Eloquent provider that also accepts legacy sha1 passwords and transparently
@@ -22,6 +23,27 @@ final class LegacyAwareUserProvider extends EloquentUserProvider
         private readonly LegacyPasswordHasher $legacyHasher,
     ) {
         parent::__construct($hasher, $model);
+    }
+
+    /**
+     * Username lookup ignores case, like the legacy MySQL collation did (D-044).
+     *
+     * @param  array<string, mixed>  $credentials
+     */
+    public function retrieveByCredentials(#[\SensitiveParameter] array $credentials): ?Authenticatable
+    {
+        $username = $credentials['username'] ?? null;
+
+        if (! is_string($username) || $username === '') {
+            return null;
+        }
+
+        $user = $this->newModelQuery()
+            ->whereRaw('lower(username) = ?', [Str::lower($username)])
+            ->orderBy('id')
+            ->first();
+
+        return $user instanceof Authenticatable ? $user : null;
     }
 
     /**

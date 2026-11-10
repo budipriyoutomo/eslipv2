@@ -8,9 +8,11 @@ Centang setiap langkah dan catat hasilnya. Detail keputusan ada di `docs/DECISIO
 ## 1. Server
 
 - [ ] PHP **8.4** dengan ekstensi: `bcmath`, `ctype`, `curl`, `dom`, `fileinfo`, `gd`, `iconv`, `intl`, `mbstring`,
-      `openssl`, `pdo_mysql`, `xml`, `xmlreader`, `xmlwriter`, `zip`, `zlib`.
+      `openssl`, `pdo_pgsql`, `pdo_mysql` (hanya untuk baca DB lama), `xml`, `xmlreader`, `xmlwriter`, `zip`, `zlib`.
       Cek: `php -m`. (`intl` tidak dipakai langsung oleh kode saat ini, tetapi disarankan plan.)
-- [ ] MySQL 8 / MariaDB 10.6+ — database baru `eslip_v2` (jangan pakai database lama).
+- [ ] PostgreSQL 15+ — database baru `eslip_v2` milik user `eslip` (D-044):
+      `CREATE USER eslip WITH PASSWORD '...'; CREATE DATABASE eslip_v2 OWNER eslip ENCODING 'UTF8';`
+- [ ] DB lama (MySQL) bisa diakses read-only dari server baru untuk `eslip:import-legacy`.
 - [ ] Composer 2, Node 20+ (hanya untuk build asset; bisa build di CI/lokal lalu upload `public/build`).
 - [ ] Web root mengarah ke `public/`.
 - [ ] HTTPS aktif.

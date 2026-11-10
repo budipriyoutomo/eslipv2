@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Enums\DeliveryStatus;
 use App\Models\DeliveryLog;
 use App\Models\PayslipBatch;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,15 +31,15 @@ final class DeliveryLogController extends Controller
                 fn (Builder $payslip) => $payslip->where('payslip_batch_id', $batch?->id),
             ))
             ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $q) => $q
-                ->where('recipient', 'like', '%'.$search.'%')
+                ->whereLike('recipient', '%'.$search.'%')
                 ->orWhereHas('payslip', fn (Builder $payslip) => $payslip
-                    ->where('nik', 'like', '%'.$search.'%')
-                    ->orWhere('name', 'like', '%'.$search.'%')
-                    ->orWhere('email', 'like', '%'.$search.'%'))
-                // Legacy rows keep their data in the JSON context column.
+                    ->whereLike('nik', '%'.$search.'%')
+                    ->orWhereLike('name', '%'.$search.'%')
+                    ->orWhereLike('email', '%'.$search.'%'))
+                // Legacy rows keep their data in the JSON context column (cast to text for Postgres).
                 ->orWhere(fn (Builder $legacy) => $legacy
                     ->whereNull('payslip_id')
-                    ->where('context', 'like', '%'.$search.'%'))))
+                    ->whereLike($this->contextAsText($legacy), '%'.$search.'%'))))
             ->orderByDesc('attempted_at')
             ->orderByDesc('id')
             ->paginate(50)
@@ -51,5 +52,15 @@ final class DeliveryLogController extends Controller
             'statuses' => DeliveryStatus::cases(),
             'batch' => $batch,
         ]);
+    }
+
+    /**
+     * @param  Builder<DeliveryLog>  $query
+     */
+    private function contextAsText(Builder $query): Expression|string
+    {
+        return $query->getModel()->getConnection()->getDriverName() === 'pgsql'
+            ? $query->getQuery()->raw('context::text')
+            : 'context';
     }
 }

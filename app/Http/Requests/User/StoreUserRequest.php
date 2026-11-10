@@ -7,6 +7,7 @@ namespace App\Http\Requests\User;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use App\Rules\UniqueUsername;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -24,7 +25,7 @@ final class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => ['required', 'string', 'regex:/\A[A-Za-z0-9._-]+\z/', 'max:50', Rule::unique('users', 'username')],
+            'username' => ['required', 'string', 'regex:/\A[A-Za-z0-9._-]+\z/', 'max:50', new UniqueUsername],
             'name' => ['required', 'string', 'max:100'],
             'email' => ['nullable', 'email', 'max:255'],
             'role' => ['required', Rule::enum(UserRole::class)->only($this->assignableRoles())],

@@ -26,8 +26,8 @@ final class UserController extends Controller
         $users = User::query()
             ->when($search !== '', fn (Builder $query): Builder => $query->where(
                 fn (Builder $q): Builder => $q
-                    ->where('username', 'like', '%'.$search.'%')
-                    ->orWhere('name', 'like', '%'.$search.'%'),
+                    ->whereLike('username', '%'.$search.'%')
+                    ->orWhereLike('name', '%'.$search.'%'),
             ))
             ->orderBy('username')
             ->paginate(20)

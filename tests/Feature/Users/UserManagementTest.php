@@ -72,6 +72,31 @@ it('validates new users', function (): void {
         ->assertSessionHasErrors(['username', 'name', 'role', 'password']);
 });
 
+it('treats usernames differing only in case as duplicates', function (): void {
+    $existing = User::factory()->create(['username' => 'Ada']);
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post('/users', [
+            'username' => 'ada',
+            'name' => 'Ada Lain',
+            'role' => UserRole::User->value,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])
+        ->assertSessionHasErrors(['username']);
+
+    $this->actingAs($admin)
+        ->put("/users/{$existing->id}", [
+            'username' => 'ADA',
+            'name' => 'Ada',
+            'role' => UserRole::User->value,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($existing->refresh()->username)->toBe('ADA');
+});
+
 it('prevents admins from creating super admins', function (): void {
     $this->actingAs(User::factory()->admin()->create())
         ->post('/users', [
