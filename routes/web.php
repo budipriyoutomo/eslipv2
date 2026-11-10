@@ -2,8 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::middleware('guest')->group(function (): void {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+});
+
+Route::middleware('auth')->group(function (): void {
+    Route::redirect('/', '/dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::middleware('role:super_admin,admin')->group(function (): void {
+        Route::resource('users', UserController::class)->except('show');
+    });
 });
