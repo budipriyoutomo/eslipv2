@@ -267,11 +267,11 @@ delivery_logs
 **Tests:** gunakan fixture `.xls` di `tests/Fixtures/` (minta sample asli yang sudah dianonimkan dari user, satu per template).
 
 ### Fase 6 — Generate PDF
-- [ ] `GeneratePayslipPdf` dengan port layout FPDF lama (ukuran A5 landscape, header company, NIK/nama/jabatan/periode, 2 kolom PENERIMAAN/POTONGAN, TOTAL, TAKE HOME PAY, tempat dan tanggal terbit).
-- [ ] Format angka `number_format($x, 2, ',', '.')` (sama dengan lama).
-- [ ] Password PDF berdasarkan `companies.pdf_password_field`.
-- [ ] Simpan sementara di disk `local` (private), bukan `public/`.
-- [ ] Tombol "Preview PDF" di halaman batch (stream langsung, tanpa simpan).
+- [x] `GeneratePayslipPdf` dengan port layout FPDF lama (ukuran A5 landscape, header company, NIK/nama/jabatan/periode, 2 kolom PENERIMAAN/POTONGAN, TOTAL, TAKE HOME PAY, tempat dan tanggal terbit).
+- [x] Format angka `number_format($x, 2, ',', '.')` (sama dengan lama).
+- [x] Password PDF berdasarkan `companies.pdf_password_field`. *(TCPDF AES-256, default NIK, D-032)*
+- [x] Simpan sementara di disk `local` (private), bukan `public/`.
+- [x] Tombol "Preview PDF" di halaman batch (stream langsung, tanpa simpan).
 
 **Tests:** PDF valid dan bisa di-parse, teks kunci muncul, serta total sesuai.
 
@@ -332,7 +332,7 @@ delivery_logs
 | 3. Auth & Role | ✅ | 62 test hijau. Smoke test `php artisan serve` (login → dashboard → /users) OK. D-019…D-023. |
 | 4. Templates | 🟨 | Standard + XFT selesai, 114 test hijau. ND + LLAO tertunda (D-002, D-025). D-024…D-026. |
 | 5. Import Excel | 🟨 | Selesai untuk Standard + XFT, 143 test hijau. Fixture masih sintetis; uji ulang dengan sample asli (D-027). D-027…D-031. |
-| 6. PDF | ⬜ | |
+| 6. PDF | ✅ | 164 test hijau. Enkripsi diverifikasi dengan `pdftotext`. Library & password = default (D-032), konfirmasi user. D-032…D-034. |
 | 7. Queue Email | ⬜ | |
 | 8. UI | ⬜ | |
 | 9. Migrasi & Cutover | ⬜ | |

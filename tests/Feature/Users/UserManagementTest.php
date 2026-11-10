@@ -178,3 +178,21 @@ it('renders the create and edit forms', function (): void {
     $this->actingAs($admin)->get('/users/create')->assertOk()->assertSee('Tambah user')->assertDontSee('Super Admin</option>', false);
     $this->actingAs($admin)->get("/users/{$target->id}/edit")->assertOk()->assertSee('diedit');
 });
+
+it('accepts usernames with dots and rejects spaces', function (string $username, bool $valid): void {
+    $response = $this->actingAs(User::factory()->admin()->create())
+        ->post('/users', [
+            'username' => $username,
+            'name' => 'Nama',
+            'role' => UserRole::User->value,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+    $valid ? $response->assertSessionHasNoErrors() : $response->assertSessionHasErrors('username');
+})->with([
+    ['budi.priyo', true],
+    ['budi_priyo-2', true],
+    ['budi priyo', false],
+    ["budi'or'1", false],
+]);

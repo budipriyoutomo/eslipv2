@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PayslipBatchController;
+use App\Http\Controllers\PayslipPdfController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,10 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('payslip-batches', PayslipBatchController::class)
         ->only(['create', 'store', 'show'])
         ->parameters(['payslip-batches' => 'batch']);
+
+    Route::get('/payslip-batches/{batch}/payslips/{payslip}/pdf', PayslipPdfController::class)
+        ->scopeBindings()
+        ->name('payslip-batches.payslips.pdf');
 
     Route::middleware('role:super_admin,admin')->group(function (): void {
         Route::resource('users', UserController::class)->except('show');

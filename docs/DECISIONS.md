@@ -97,7 +97,7 @@ menghitung posisi dari jumlah baris, bukan hardcode.
 Tipe `JSON` MySQL menormalisasi (mengurutkan ulang) key objek. Urutan label earnings/deductions di PDF/UI
 selalu diambil dari Template, bukan dari urutan key `payslips.earnings` / `payslips.deductions`.
 
-## D-012 — Proteksi password PDF · open · Fase 6
+## D-012 — Proteksi password PDF · superseded oleh D-032 · Fase 6
 `setasign/fpdi-protection` hanya mendukung enkripsi RC4 (lemah). Kandidat: tetap FPDF + fpdi-protection
 (layout 1:1 paling mudah) vs mPDF/TCPDF (AES-128/256). Keputusan final di Fase 6.
 
@@ -230,3 +230,31 @@ Sementara itu `DatabaseSeeder` membuat 2 PT contoh (Standard & XFT, mailer `log`
 
 ## D-031 — Hak upload · accepted · Fase 5
 Sesuai lama, semua role (termasuk `user`) boleh upload dan melihat preview batch.
+
+## D-032 — Library PDF & password · accepted (default, belum dikonfirmasi user) · Fase 6
+User tidak memilih saat ditanya, jadi dipakai default plan + rekomendasi:
+- **Library: `tecnickcom/tcpdf` ^6.11** (bukan FPDF + fpdi-protection). Alasan: enkripsi **AES-256** (`AESV3`),
+  API `Cell()/Line()` hampir sama dengan FPDF sehingga layout bisa di-port baris per baris.
+  Versi 7.0.x baru dirilis (7.0.22 rilis minggu ini) → dipin ke cabang 6.x yang matang.
+  Catatan: TCPDF ditandai *deprecated* oleh pembuatnya (penerus: `tecnickcom/tc-lib-pdf`). Semua pemakaian
+  terkurung di `App\Payslip\Pdf\PayslipDocument` + `GeneratePayslipPdf`, jadi migrasi library nanti terlokalisir.
+- **Password: NIK** (default plan), per company lewat `companies.pdf_password_field` = `nik` | `email` | `none`.
+  Owner password acak per file; izin yang dicabut: modify, annot-forms, fill-forms, assemble (print & copy tetap boleh).
+  Diverifikasi dengan poppler `pdftotext`: tanpa password/password salah ditolak, NIK membuka file.
+- **Preview admin** (`GET /payslip-batches/{batch}/payslips/{payslip}/pdf`) di-stream inline **tanpa password**
+  dan tanpa disimpan, `Cache-Control: private, no-store`. File yang dikirim email selalu ber-password.
+- File untuk email disimpan sementara di disk `local` (private, `storage/app/private`) pada
+  `payslips/tmp/{batch_id}/{nik}-{payslip_id}.pdf`; dihapus oleh job (Fase 7) dan cleanup terjadwal (Fase 9).
+
+## D-033 — Port layout PDF · accepted · Fase 6
+- A5 landscape, margin 10 mm, cell padding 1 mm (meniru `cMargin` FPDF), font Helvetica (pengganti Arial di FPDF).
+- Isi kolom dibangun generik dan menghasilkan urutan baris **identik** dengan kedua slip lama:
+  kiri = earnings + `KET PENERIMAAN :` + catatan; kanan = deductions + `KET POTONGAN :` + catatan + 4 baris kehadiran.
+- Posisi garis total dihitung dari posisi Y saat itu (D-010), bukan hardcode 115/105.
+- Garis bawah header digeser dari y=30 ke y=31 karena baris telepon menempel garis.
+- Logo dibaca dari `companies.logo_path` di disk `local` (tinggi 14 mm); tanpa logo, header tetap di X=25 seperti lama.
+- Periode `Oktober 2026` dan tanggal `Bandung, 31 Oktober 2026` (D-009). Kota kosong → hanya tanggal.
+
+## D-034 — Format username · accepted · Fase 3 (fix)
+Rule `alpha_dash` menolak titik, padahal username lama mungkin memakai titik (`budi.priyo`).
+Diganti `regex:/\A[A-Za-z0-9._-]+\z/`.

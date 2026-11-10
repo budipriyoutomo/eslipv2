@@ -36,6 +36,7 @@
                     <th class="px-4 py-3 text-right">Potongan</th>
                     <th class="px-4 py-3 text-right">THP</th>
                     <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3"><span class="sr-only">PDF</span></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -49,6 +50,10 @@
                         <td class="px-4 py-3 text-right tabular-nums">{{ $money($row['total_deductions']) }}</td>
                         <td class="px-4 py-3 text-right font-medium tabular-nums">{{ $money($row['payslip']->take_home_pay) }}</td>
                         <td class="px-4 py-3">{{ $row['payslip']->delivery_status->label() }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('payslip-batches.payslips.pdf', [$batch, $row['payslip']]) }}" target="_blank" rel="noopener"
+                               class="whitespace-nowrap text-slate-600 hover:text-slate-900">Preview PDF</a>
+                        </td>
                     </tr>
                 @endforeach
             </tbody>

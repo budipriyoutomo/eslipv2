@@ -36,6 +36,7 @@ return [
         'symbols' => ':Attribute harus berisi minimal satu simbol.',
         'uncompromised' => ':Attribute ini pernah bocor. Gunakan :attribute lain.',
     ],
+    'regex' => 'Format :attribute tidak valid.',
     'required' => ':Attribute wajib diisi.',
     'string' => ':Attribute harus berupa teks.',
     'unique' => ':Attribute sudah digunakan.',
