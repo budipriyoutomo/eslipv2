@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PayslipBatchController;
+use App\Http\Controllers\PayslipBatchDispatchController;
 use App\Http\Controllers\PayslipPdfController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,11 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('payslip-batches', PayslipBatchController::class)
         ->only(['create', 'store', 'show'])
         ->parameters(['payslip-batches' => 'batch']);
+
+    Route::post('/payslip-batches/{batch}/send', [PayslipBatchDispatchController::class, 'send'])
+        ->name('payslip-batches.send');
+    Route::post('/payslip-batches/{batch}/resend-failed', [PayslipBatchDispatchController::class, 'resendFailed'])
+        ->name('payslip-batches.resend-failed');
 
     Route::get('/payslip-batches/{batch}/payslips/{payslip}/pdf', PayslipPdfController::class)
         ->scopeBindings()

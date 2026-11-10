@@ -258,3 +258,31 @@ User tidak memilih saat ditanya, jadi dipakai default plan + rekomendasi:
 ## D-034 — Format username · accepted · Fase 3 (fix)
 Rule `alpha_dash` menolak titik, padahal username lama mungkin memakai titik (`budi.priyo`).
 Diganti `regex:/\A[A-Za-z0-9._-]+\z/`.
+
+## D-035 — Hosting & akun SMTP · open · Fase 7/9
+User belum menjawab. Asumsi sementara: **VPS** (worker via Supervisor, contoh di `docs/deploy/supervisor.conf`).
+Mailer per PT memakai `companies.mailer` (`smtp_bogajabar`, `smtp_maharasa`, `smtp_gmail`, atau `log` untuk dev).
+Pemetaan PT → mailer harus diisi saat import data PT (Fase 9). Jika ternyata shared hosting tanpa Supervisor,
+alternatif: cron `* * * * * php artisan queue:work --stop-when-empty --max-time=55`.
+
+## D-036 — Retry & throttle job · accepted · Fase 7
+Plan: `tries = 3`. Middleware `RateLimited` me-*release* job saat kena limit, dan setiap release dihitung sebagai
+attempt, sehingga `tries = 3` membuat job gagal hanya karena antre. Maka dipakai `maxExceptions = 3`
+(3 kegagalan nyata) + `retryUntil = 12 jam` + `backoff = [60, 300]`. Throttle: `ESLIP_MAIL_PER_MINUTE`
+(default 20) per mailer (`RateLimiter::for('payslip-mail')`, key `payslip-mail:{mailer}`).
+
+## D-037 — Keamanan pengiriman · accepted · Fase 7
+- Batch hanya bisa "Kirim semua" dari status `draft`; dicek di dalam transaksi dengan `lockForUpdate`
+  (double click tidak mengirim dua kali).
+- Job melewati payslip yang sudah `sent` (retry setelah sukses tidak mengirim ulang email).
+- `sent_count` / `failed_count` dihitung ulang dari tabel `payslips` (`refreshDeliveryCounts()`), bukan increment,
+  sehingga tetap benar saat retry dan kirim ulang. Batch jadi `done` saat tidak ada yang `pending`.
+- Setiap attempt (sukses/gagal) ditulis ke `delivery_logs` (recipient, error, mailer, attempt).
+- `ESLIP_MAIL_OVERRIDE_TO`: semua email dialihkan ke satu inbox (untuk paralel run Fase 9 / staging);
+  alamat karyawan asli tetap tercatat di `delivery_logs.context.employee_email`.
+- Semua role boleh mengirim (lama: semua role bisa menekan "proses").
+
+## D-038 — Isi email · accepted · Fase 7
+Subject `E-Slip {nama PT}` (sama dengan lama). Body `Dear {nama karyawan}, Berikut E-Slip Gaji Bulan {Oktober 2026}.`
+(lama menyapa dengan alamat email, D-009) + petunjuk password bila PDF diproteksi + penutup nama PT.
+Tersedia versi HTML dan teks. From = `companies.from_address` / `from_name`.

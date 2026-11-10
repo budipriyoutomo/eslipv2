@@ -276,14 +276,14 @@ delivery_logs
 **Tests:** PDF valid dan bisa di-parse, teks kunci muncul, serta total sesuai.
 
 ### Fase 7 — Queue Email + Delivery Log
-- [ ] `PayslipMail` (Mailable) dengan subject `E-Slip {company}` dan body `Dear {nama}, Berikut E-Slip Gaji Bulan {periode}` (mengikuti lama, pindahkan ke Blade view).
-- [ ] Mailer dipilih dari `companies.mailer`.
-- [ ] `SendPayslipJob`: generate PDF, kirim, tulis `delivery_logs`, update `payslips.delivery_status`, lalu hapus file PDF di blok `finally`.
-- [ ] `tries = 3`, `backoff = [60, 300]`, `failed()` mencatat log.
-- [ ] Throttle pengiriman per mailer (`RateLimited` middleware) agar tidak kena limit SMTP.
-- [ ] `DispatchPayslipBatch` dengan `Bus::batch()` dan progress di UI.
-- [ ] Fitur **kirim ulang yang gagal** per batch.
-- [ ] Contoh config Supervisor di `docs/deploy/supervisor.conf`.
+- [x] `PayslipMail` (Mailable) dengan subject `E-Slip {company}` dan body `Dear {nama}, Berikut E-Slip Gaji Bulan {periode}` (mengikuti lama, pindahkan ke Blade view).
+- [x] Mailer dipilih dari `companies.mailer`.
+- [x] `SendPayslipJob`: generate PDF, kirim, tulis `delivery_logs`, update `payslips.delivery_status`, lalu hapus file PDF di blok `finally`.
+- [x] `tries = 3`, `backoff = [60, 300]`, `failed()` mencatat log. *(`maxExceptions = 3`, D-036)*
+- [x] Throttle pengiriman per mailer (`RateLimited` middleware) agar tidak kena limit SMTP.
+- [x] `DispatchPayslipBatch` dengan `Bus::batch()` dan progress di UI.
+- [x] Fitur **kirim ulang yang gagal** per batch.
+- [x] Contoh config Supervisor di `docs/deploy/supervisor.conf`.
 
 **Tests:** `Mail::fake()`, `Queue::fake()`, sukses, gagal lalu status failed, serta retry.
 
@@ -333,6 +333,6 @@ delivery_logs
 | 4. Templates | 🟨 | Standard + XFT selesai, 114 test hijau. ND + LLAO tertunda (D-002, D-025). D-024…D-026. |
 | 5. Import Excel | 🟨 | Selesai untuk Standard + XFT, 143 test hijau. Fixture masih sintetis; uji ulang dengan sample asli (D-027). D-027…D-031. |
 | 6. PDF | ✅ | 164 test hijau. Enkripsi diverifikasi dengan `pdftotext`. Library & password = default (D-032), konfirmasi user. D-032…D-034. |
-| 7. Queue Email | ⬜ | |
+| 7. Queue Email | ✅ | 184 test hijau. E2E nyata: worker `database` + mailer `log`, 3/3 terkirim, file temp terhapus. Hosting & SMTP per PT masih asumsi (D-035). D-035…D-038. |
 | 8. UI | ⬜ | |
 | 9. Migrasi & Cutover | ⬜ | |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\DeliveryStatus;
 use App\Enums\PayslipBatchStatus;
 use App\Enums\PayslipTemplateType;
 use Carbon\CarbonImmutable;
@@ -27,10 +28,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $sent_count
  * @property int $failed_count
  * @property list<string>|null $warnings
+ * @property string|null $job_batch_id
  */
 #[Fillable([
     'company_id', 'template_type', 'period', 'issued_at', 'source_filename',
-    'uploaded_by', 'status', 'total_rows', 'sent_count', 'failed_count', 'warnings',
+    'uploaded_by', 'status', 'total_rows', 'sent_count', 'failed_count', 'warnings', 'job_batch_id',
 ])]
 final class PayslipBatch extends Model
 {
@@ -69,6 +71,38 @@ final class PayslipBatch extends Model
     public function payslips(): HasMany
     {
         return $this->hasMany(Payslip::class);
+    }
+
+    /**
+     * Recompute sent/failed counters from the payslips (idempotent, safe under retries and resends)
+     * and mark the batch done once nothing is pending any more.
+     */
+    public function refreshDeliveryCounts(): void
+    {
+        $counts = $this->payslips()
+            ->toBase()
+            ->selectRaw('delivery_status, count(*) as aggregate')
+            ->groupBy('delivery_status')
+            ->pluck('aggregate', 'delivery_status');
+
+        $this->sent_count = (int) ($counts[DeliveryStatus::Sent->value] ?? 0);
+        $this->failed_count = (int) ($counts[DeliveryStatus::Failed->value] ?? 0);
+
+        if ($this->status === PayslipBatchStatus::Processing && (int) ($counts[DeliveryStatus::Pending->value] ?? 0) === 0) {
+            $this->status = PayslipBatchStatus::Done;
+        }
+
+        $this->save();
+    }
+
+    public function pendingCount(): int
+    {
+        return max(0, $this->total_rows - $this->sent_count - $this->failed_count);
+    }
+
+    public function progressPercent(): int
+    {
+        return $this->total_rows === 0 ? 0 : (int) floor(($this->sent_count + $this->failed_count) * 100 / $this->total_rows);
     }
 
     /**
