@@ -1,0 +1,116 @@
+# Decisions & Deviations
+
+Catatan keputusan teknis dan perbedaan antara `Migration-Plan.md` dengan kode lama.
+Source lama (sumber kebenaran): `d:/Project/htdocs/eslip/application` (CodeIgniter 3.1.3).
+
+Format: **ID — judul** · status (`accepted`, `open`, `superseded`) · fase terkait.
+
+---
+
+## D-001 — Lokasi source lama · accepted · semua fase
+Plan menyebut `application/`, tetapi repo ini (`eslipv2`) tidak berisi kode lama.
+Kode lama ada di `d:/Project/htdocs/eslip/application`.
+Proyek Laravel 10 di `d:/Project/eslip` (format Songfa, Google Drive, modul pelamar) **bukan bagian dari migrasi ini**.
+
+## D-002 — Template ND & LLAO tidak ada di source · open · Fase 4
+Source hanya memiliki `Tmsteslip.php` (Standard) dan `Tmsteslipxft.php` (XFT), beserta model/view-nya.
+`Tmsteslipnd.php` / `Tmsteslipllao.php` tidak ditemukan. Mapping ND/LLAO di plan belum terverifikasi.
+Butuh: source production atau sample Excel ND/LLAO dari user.
+
+## D-003 — Kredensial SMTP · accepted · Fase 1/7
+Plan menyebut `config/email_secret.php` dengan 3 akun. Faktanya file itu tidak ada; kredensial SMTP
+di-hardcode plaintext di `Tmsteslip.php`, `Tmsteslipxft.php`, `Send.php`, dan hanya **satu akun** yang dipakai
+(host `ssl://...:465`, akun HRD Boga Jabar).
+Keputusan: mailer `smtp_bogajabar`, `smtp_maharasa`, `smtp_gmail` didefinisikan di `config/mail.php`,
+semua kredensial dari `.env`. **Rekomendasi: rotasi password SMTP lama** karena tersimpan plaintext di source.
+
+## D-004 — Template dipilih per menu, bukan per PT · open · Fase 2/5
+Di sistem lama, template ditentukan oleh menu (controller) yang dipilih admin, bukan oleh PT.
+Tabel `tmstbrand` tidak punya kolom template. Plan menaruh `template_type` di `companies`.
+Usulan: `companies.template_type` sebagai *default*, dan `payslip_batches.template_type` disimpan per batch
+(bisa di-override saat upload). Konfirmasi ke user.
+
+## D-005 — Mapping kolom Excel (terverifikasi) · accepted · Fase 4
+Kolom 1-based, loop mulai baris 1, berhenti bila kolom 1 (NIK) kosong.
+
+| Field | Standard | XFT |
+|---|---|---|
+| nik / nama / jabatan | 1 / 2 / 3 | 1 / 2 / 3 |
+| periode (diabaikan, dari form) | 4 | 4 |
+| gaji | 5 | 5 |
+| bonus | – | 6 |
+| svctetap / svcvariabel / target | 6 / 7 / 8 | – |
+| lembur | 9 | 7 |
+| uangmakan | 10 | 8 |
+| transport | 11 | 9 |
+| pengmcu | 12 | 10 |
+| bpjsnakerjht | 13 | 11 |
+| bpjsnakerjp | 14 | 12 |
+| bpjssehat | 15 | 13 |
+| potmcu | 16 | 14 |
+| pinalty | 17 | – |
+| potlain | 18 | 15 |
+| ketpot | 19 | 16 |
+| penlain | 20 | 17 |
+| ketpen | 21 | 18 |
+| sakit | 22 | 19 |
+| alpha | 23 | 20 |
+| cutdak | 24 | 21 |
+| hadir | 25 | 22 |
+| thp | 26 | 23 |
+| penerbit / namapt (diabaikan, dari form) | 27 / 28 | 24 / 25 |
+| email | 29 | 26 |
+
+## D-006 — Field yang belum ada di skema plan · accepted · Fase 2
+`ketpen` (keterangan penerimaan) dan data kehadiran (`sakit`, `alpha`, `cutdak`, `hadir`) tidak ada di skema
+`payslips` plan. Ditambahkan: `earning_note` (text nullable) dan `attendance` (json: `sick`, `absent`,
+`sudden_leave`, `present`).
+
+## D-007 — Total penerimaan & THP · accepted · Fase 4
+- Total penerimaan dihitung di PDF lama (bukan dari Excel):
+  - Standard: `gaji+svctetap+svcvariabel+target+lembur+uangmakan+transport+pengmcu+penlain`
+  - XFT: `gaji+bonus+lembur+uangmakan+transport+pengmcu+penlain`
+- Interface `PayslipTemplate` ditambah `totalEarnings()`.
+- `thp` **diambil dari Excel** (Standard kol. 26, XFT kol. 23), tidak dihitung. Sesuai plan: tampilkan warning
+  (tidak memblokir) bila `thp != totalEarnings - totalDeductions`.
+
+## D-008 — Baris header Excel · open · Fase 5
+Loop lama mulai dari baris 1 tanpa skip header, sehingga file lama diasumsikan **tanpa baris header**.
+Bila sample asli punya header, import baru harus skip baris yang kolom NIK-nya bukan data. Konfirmasi via sample.
+
+## D-009 — Perilaku lama yang sengaja diubah · accepted · Fase 6/7
+| Lama | Baru | Alasan |
+|---|---|---|
+| Body email `Dear {email}, ...` | `Dear {nama}, ...` | Bug: menyapa dengan alamat email |
+| Periode `date("F-Y")` → `January-2025` | Nama bulan Indonesia (`Januari 2025`) | Konsisten dengan label Bahasa Indonesia; **konfirmasi saat paralel run** |
+| Tanggal terbit dicetak mentah `Y-m-d` | Format `d F Y` Indonesia | Keterbacaan |
+| Kota "Bandung" hardcode | `companies.city` | Plan poin 6 |
+| Logo hardcode berdasarkan `id` brand 1–4 (`logo-ST/PL/BJ/XF.png`) | `companies.logo_path` | Kolom `tmstbrand.logo` ada tapi tak dipakai |
+| XFT tidak menulis log `tstatus`; gagal kirim → `show_error()` menghentikan loop | Semua template menulis `delivery_logs` | Plan poin 2 |
+| `tmstbrand.tipe` (2 cabang header identik) | Tidak dimigrasi | Tidak ada perbedaan perilaku |
+
+## D-010 — Posisi garis PDF berbeda per template · accepted · Fase 6
+Standard: garis total di y=115/121. XFT: y=105/110 (karena baris lebih sedikit). Port layout harus
+menghitung posisi dari jumlah baris, bukan hardcode.
+
+## D-011 — Urutan label tidak bergantung pada JSON · accepted · Fase 2/4
+Tipe `JSON` MySQL menormalisasi (mengurutkan ulang) key objek. Urutan label earnings/deductions di PDF/UI
+selalu diambil dari Template, bukan dari urutan key `payslips.earnings` / `payslips.deductions`.
+
+## D-012 — Proteksi password PDF · open · Fase 6
+`setasign/fpdi-protection` hanya mendukung enkripsi RC4 (lemah). Kandidat: tetap FPDF + fpdi-protection
+(layout 1:1 paling mudah) vs mPDF/TCPDF (AES-128/256). Keputusan final di Fase 6.
+
+## D-013 — Dump DB lama · open · Fase 9
+`localhost.sql` di source lama berisi tabel aplikasi lain (training). Dibutuhkan dump production berisi
+`user`, `tmstbrand`, `tstatus`, `tmsteslip`, `tmsteslipxft` untuk `eslip:import-legacy`.
+Kolom `tmstbrand` yang terlihat di kode: `id, namaPT, alamat, kota, telp, logo, tipe`.
+Kolom `user`: `id, username, password(varchar 50, sha1), role enum('Admin','User','SuperAdmin'), nama, ...`.
+
+## D-014 — Setup project · accepted · Fase 1
+- Laravel 13 dipasang langsung di root `eslipv2` (bukan subfolder `eslip-v2`).
+- Laravel Boost (disarankan oleh `CLAUDE.md`/`AGENTS.md` bawaan skeleton) tidak dipasang; tidak diminta plan.
+- Ekstensi `intl` belum aktif di PHP lokal; wajib ada di server (lihat checklist Fase 9). Kode tidak boleh
+  bergantung pada `intl` di test lokal sampai ekstensi diaktifkan.
+- Test lokal & CI memakai SQLite in-memory; production MySQL/MariaDB.
+- Timezone default `Asia/Jakarta`, locale `id`.
