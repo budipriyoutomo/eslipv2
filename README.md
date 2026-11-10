@@ -1,58 +1,53 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# E-Slip v2
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi pengiriman slip gaji (e-slip) per email: admin upload file Excel per PT dan periode, sistem membuat
+PDF slip ber-password untuk setiap karyawan, lalu mengirimnya lewat antrean (queue) dengan log pengiriman.
 
-## About Laravel
+Migrasi dari aplikasi CodeIgniter 3 lama ke **Laravel 13 / PHP 8.4**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Dokumen | Isi |
+|---|---|
+| [`Migration-Plan.md`](Migration-Plan.md) | Rencana migrasi per fase + progress |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Keputusan teknis & perbedaan dengan sistem lama |
+| [`docs/deploy/CHECKLIST.md`](docs/deploy/CHECKLIST.md) | Deploy, migrasi data, paralel run, cutover |
+| [`docs/deploy/supervisor.conf`](docs/deploy/supervisor.conf) | Contoh queue worker |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Alur
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. **Upload** (`/payslip-batches/create`): pilih PT, template (default ikut PT), periode, tanggal terbit, file `.xls`/`.xlsx`.
+   Semua baris divalidasi; jika ada error tidak ada data yang disimpan.
+2. **Preview** batch: total per karyawan, peringatan (THP tidak cocok, NIK duplikat), preview PDF.
+3. **Kirim semua** → satu job per karyawan (`SendPayslipJob`) dalam satu Bus batch, dibatasi per akun SMTP.
+4. **Riwayat** (`/delivery-logs`) dan **Kirim ulang yang gagal** per batch.
 
-## Learning Laravel
+Template yang didukung: **Standard** dan **XFT**. ND & LLAO menunggu source/sample (D-002, D-025).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Development
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sh
+composer install && npm install
+cp .env.example .env && php artisan key:generate
+# development cepat dengan SQLite:
+#   DB_CONNECTION=sqlite  (hapus DB_HOST/DB_DATABASE dll.)
+php artisan migrate --seed          # user: superadmin / password, 2 PT contoh (mailer "log")
+npm run build
+php artisan serve
+php artisan queue:work database --queue=payslips,default   # terminal kedua
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Email di development masuk ke `storage/logs/laravel.log` (mailer `log`).
 
-## Contributing
+## Quality gate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```sh
+vendor/bin/pint --test
+vendor/bin/phpstan analyse
+php artisan test
+```
 
-## Code of Conduct
+## Perintah artisan
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Perintah | Fungsi |
+|---|---|
+| `eslip:import-legacy` | Import user, PT, dan riwayat `tstatus` dari DB lama (idempotent, `--dry-run`) |
+| `eslip:cleanup-temp` | Hapus PDF sementara > 24 jam (terjadwal harian) |

@@ -295,10 +295,10 @@ delivery_logs
 - [x] *(tambahan)* CRUD PT (D-030, D-039) dan hapus batch draft (D-040).
 
 ### Fase 9 — Migrasi Data & Cutover
-- [ ] `eslip:import-legacy` (bagian 5).
-- [ ] **Paralel run**: 1 periode gaji diproses di sistem lama dan baru (email baru dikirim ke alamat test), lalu bandingkan PDF.
-- [ ] Checklist deploy: PHP 8.4 extensions (`gd`, `zip`, `xml`, `mbstring`, `bcmath`, `intl`), queue worker, cron `schedule:run`, storage permission.
-- [ ] Cleanup terjadwal: hapus file temp > 1 hari.
+- [x] `eslip:import-legacy` (bagian 5). *(diuji dengan DB legacy tiruan; belum ke data asli, D-041)*
+- [ ] **Paralel run**: 1 periode gaji diproses di sistem lama dan baru (email baru dikirim ke alamat test), lalu bandingkan PDF. *(prosedur di `docs/deploy/CHECKLIST.md` §5; pakai `ESLIP_MAIL_OVERRIDE_TO`)*
+- [x] Checklist deploy: PHP 8.4 extensions (`gd`, `zip`, `xml`, `mbstring`, `bcmath`, `intl`), queue worker, cron `schedule:run`, storage permission.
+- [x] Cleanup terjadwal: hapus file temp > 1 hari.
 
 ---
 
@@ -336,4 +336,4 @@ delivery_logs
 | 6. PDF | ✅ | 164 test hijau. Enkripsi diverifikasi dengan `pdftotext`. Library & password = default (D-032), konfirmasi user. D-032…D-034. |
 | 7. Queue Email | ✅ | 184 test hijau. E2E nyata: worker `database` + mailer `log`, 3/3 terkirim, file temp terhapus. Hosting & SMTP per PT masih asumsi (D-035). D-035…D-038. |
 | 8. UI | ✅ | 216 test hijau. Smoke test semua halaman di server lokal: 200. D-039, D-040. |
-| 9. Migrasi & Cutover | ⬜ | |
+| 9. Migrasi & Cutover | 🟨 | Kode & dokumen siap (227 test hijau): import legacy, cleanup terjadwal, `docs/deploy/CHECKLIST.md`. Menunggu dump DB, server, sample Excel & SMTP asli untuk import nyata, paralel run, cutover (D-043). |

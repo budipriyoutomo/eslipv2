@@ -153,7 +153,7 @@ Baru (sesuai plan, middleware `role:super_admin,admin`):
 - Tidak ada yang bisa menghapus akunnya sendiri.
 Aturan di `App\Policies\UserPolicy`.
 
-## D-021 — Password plaintext di tabel `user` lama · open · Fase 9
+## D-021 — Password plaintext di tabel `user` lama · accepted (ditangani di D-041) · Fase 9
 `User::create_action/update_action` lama menyimpan password **mentah** dari form (tanpa sha1), sementara login
 membandingkan `sha1(input)`. Akibatnya tabel `user` lama kemungkinan berisi campuran hash sha1 dan plaintext.
 Rencana `eslip:import-legacy`: nilai yang cocok pola sha1 (40 hex) → salin + `legacy_sha1 = true`;
@@ -306,3 +306,32 @@ Cukup untuk volume batch/slip saat ini; tidak ada query di Blade (relasi di-eage
 Padanan `deldata`/`delete` lama (hanya role selain `User`). Baru: hanya batch berstatus **draft** yang bisa dihapus
 (belum ada email terkirim), payslip ikut terhapus (cascade). Batch `processing`/`done` tidak bisa dihapus agar
 histori pengiriman tetap utuh.
+
+## D-041 — `eslip:import-legacy` · accepted (belum diuji ke data asli) · Fase 9
+Dibangun dari kolom yang dibaca kode lama karena dump production belum ada (D-013). Diuji dengan salinan tabel
+legacy tiruan di SQLite. **Wajib `--dry-run` ke DB asli dulu.**
+- **Idempotent tanpa menimpa**: user (by `username`, case-insensitive) dan PT (by `code`) yang sudah ada dilewati,
+  karena admin mungkin sudah mengeditnya di aplikasi baru. `tstatus` dicocokkan lewat `context.legacy_id`,
+  jadi run berikutnya hanya menambah baris baru.
+- **User**: hash 40-hex → disalin + `legacy_sha1 = true`; selain itu dianggap plaintext → `Hash::make()`;
+  password kosong → password acak (harus di-reset admin). Role via `UserRole::fromLegacy()`. Nama kosong → username.
+- **PT** (`tmstbrand`): kode = `ST`/`PL`/`BJ`/`XF` untuk id 1–4 (dari logo hardcode lama), selain itu `BRAND-{id}`.
+  Template default `standard`, override per id dengan `--template=4:xft` (pemetaan PT → template tidak ada di DB lama).
+  Mailer default `--mailer=smtp_bogajabar` (satu-satunya akun di kode lama), password PDF `nik`.
+  Logo disalin dari `--logo-dir` (`logo-{KODE}.png`) ke disk privat.
+- **Riwayat** (`tstatus`): `status` 1 → sent, lainnya → failed. `tstatus` tidak punya timestamp, jadi
+  `attempted_at` = tanggal terbit (`penerbit`), fallback periode. `namapt` (id brand) diterjemahkan ke nama PT.
+- Setiap langkah dalam transaksi; `--only=users|companies|history` untuk menjalankan sebagian.
+
+## D-042 — Cleanup & housekeeping terjadwal · accepted · Fase 9
+`eslip:cleanup-temp` (harian 02:00) menghapus PDF di `payslips/tmp` yang lebih tua dari 24 jam beserta folder
+kosongnya (jaring pengaman bila worker mati sebelum `finally`). `queue:prune-batches` dan `queue:prune-failed`
+mingguan (30 hari). Butuh cron `schedule:run` di server.
+
+## D-043 — Langkah Fase 9 yang belum bisa dikerjakan · open · Fase 9
+Belum bisa dikerjakan tanpa akses user/server; prosedur lengkap ada di `docs/deploy/CHECKLIST.md`:
+- Import ke DB production (butuh dump/akses read-only, D-013).
+- Paralel run 1 periode (butuh sample Excel asli, server, dan SMTP asli; pakai `ESLIP_MAIL_OVERRIDE_TO`).
+- Pengujian SMTP sungguhan per akun (D-035).
+- Pengujian migration di MySQL/MariaDB (selama ini hanya SQLite).
+- Template ND & LLAO (D-002, D-025).
