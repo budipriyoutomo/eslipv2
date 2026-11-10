@@ -237,9 +237,9 @@ delivery_logs
 **Done when:** `php artisan test` hijau dan pipeline CI hijau.
 
 ### Fase 2 — Schema, Models, Enums
-- [ ] Migrations sesuai bagian 5.
-- [ ] Models + casts (enum, json, decimal, date) + factories.
-- [ ] Enums `UserRole`, `PayslipTemplateType`, `DeliveryStatus`.
+- [x] Migrations sesuai bagian 5. *(+ `template_type` di batch, `earning_note`/`attendance` di payslip, lihat D-004, D-006, D-016)*
+- [x] Models + casts (enum, json, decimal, date) + factories.
+- [x] Enums `UserRole`, `PayslipTemplateType`, `DeliveryStatus`. *(+ `PayslipBatchStatus`)*
 
 **Done when:** test factory dan relasi lulus.
 
@@ -328,7 +328,7 @@ delivery_logs
 | Fase | Status | Catatan |
 |---|---|---|
 | 1. Setup | ✅ | Laravel 13.40, PHP 8.4.22, Pest 5.3, Larastan 3.14 (level 6), Pint. CI di `.github/workflows/ci.yml` (belum dijalankan; repo belum punya remote). Lihat `docs/DECISIONS.md` D-001…D-014. |
-| 2. Schema & Models | ⬜ | |
+| 2. Schema & Models | ✅ | 25 test hijau (SQLite). Migrations belum diuji di MySQL/MariaDB. D-015…D-018. |
 | 3. Auth & Role | ⬜ | |
 | 4. Templates | ⬜ | |
 | 5. Import Excel | ⬜ | |

@@ -24,11 +24,11 @@ di-hardcode plaintext di `Tmsteslip.php`, `Tmsteslipxft.php`, `Send.php`, dan ha
 Keputusan: mailer `smtp_bogajabar`, `smtp_maharasa`, `smtp_gmail` didefinisikan di `config/mail.php`,
 semua kredensial dari `.env`. **Rekomendasi: rotasi password SMTP lama** karena tersimpan plaintext di source.
 
-## D-004 — Template dipilih per menu, bukan per PT · open · Fase 2/5
+## D-004 — Template dipilih per menu, bukan per PT · accepted (disetujui user) · Fase 2/5
 Di sistem lama, template ditentukan oleh menu (controller) yang dipilih admin, bukan oleh PT.
 Tabel `tmstbrand` tidak punya kolom template. Plan menaruh `template_type` di `companies`.
-Usulan: `companies.template_type` sebagai *default*, dan `payslip_batches.template_type` disimpan per batch
-(bisa di-override saat upload). Konfirmasi ke user.
+Keputusan: `companies.template_type` sebagai *default*, dan `payslip_batches.template_type` disimpan per batch
+(bisa di-override saat upload). Template untuk render/import selalu dibaca dari **batch**, bukan company.
 
 ## D-005 — Mapping kolom Excel (terverifikasi) · accepted · Fase 4
 Kolom 1-based, loop mulai baris 1, berhenti bila kolom 1 (NIK) kosong.
@@ -114,3 +114,25 @@ Kolom `user`: `id, username, password(varchar 50, sha1), role enum('Admin','User
   bergantung pada `intl` di test lokal sampai ekstensi diaktifkan.
 - Test lokal & CI memakai SQLite in-memory; production MySQL/MariaDB.
 - Timezone default `Asia/Jakarta`, locale `id`.
+
+## D-015 — Kolom enum disimpan sebagai string · accepted · Fase 2
+`role`, `template_type`, `status`, `delivery_status` memakai kolom `string` + enum cast PHP, bukan tipe `ENUM`
+MySQL. Alasan: menambah case (mis. template baru) tidak butuh `ALTER TABLE`, dan portabel ke SQLite untuk test.
+Validasi nilai dijaga oleh enum cast.
+
+## D-016 — `delivery_logs` untuk histori lama · accepted · Fase 2/9
+Tabel `tstatus` lama tidak punya relasi ke payslip baru. Maka `delivery_logs.payslip_id` **nullable**, ditambah
+kolom `recipient` (alamat tujuan) dan `context` (json: snapshot nik/nama/periode/namapt dari `tstatus`).
+Log baru (Fase 7) selalu mengisi `payslip_id`.
+
+## D-017 — Tanpa cast `hashed` pada `users.password` · accepted · Fase 2/3
+Cast `hashed` bawaan akan meng-hash ulang string sha1 lama saat import, sehingga login legacy rusak.
+Password di-hash eksplisit dengan `Hash::make()` di kode (form user, rehash Fase 3). Kolom `email_verified_at`
+dihapus (tidak dipakai; login dengan `username`).
+
+## D-018 — Kolom tambahan di `payslip_batches` · accepted · Fase 2
+- `template_type` (D-004).
+- Index `(company_id, period)` untuk dashboard.
+- FK `company_id` → `restrictOnDelete` (company dengan batch tidak bisa dihapus);
+  `uploaded_by` → `nullOnDelete` (histori batch tetap ada walau user dihapus);
+  `payslips` & `delivery_logs` → `cascadeOnDelete`.
