@@ -1,0 +1,84 @@
+# E-Slip v2 — trial / single-server stack.
+#
+#   cp .env.docker.example .env.docker      # isi APP_KEY, password DB, mail
+#   docker compose up -d --build
+#   docker compose exec app php artisan eslip:create-user superadmin
+#
+# Web: http://localhost:8080   ·   Mailpit (inbox trial): http://localhost:8025
+# Lihat docs/deploy/DOCKER.md.
+
+x-app: &app
+  build:
+    context: .
+    target: app
+  image: eslipv2-app:latest
+  env_file: .env.docker
+  volumes:
+    - storage:/var/www/html/storage
+  restart: unless-stopped
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD come from .env.docker.
+    env_file: .env.docker
+    environment:
+      TZ: Asia/Jakarta
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: run migrations, then app/worker/scheduler start.
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["php", "artisan", "migrate", "--force"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    <<: *app
+
+  web:
+    build:
+      context: .
+      target: web
+    image: eslipv2-web:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      - app
+
+  # Sends payslips. One process is enough: sending is throttled per SMTP account.
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "database", "--queue=payslips,default", "--sleep=3", "--max-time=3600", "--memory=256"]
+    # Longer than SendPayslipJob::$timeout (120 s) so a running send can finish on shutdown.
+    stop_grace_period: 150s
+
+  # Cleanup of temporary PDFs and queue pruning (routes/console.php).
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+
+  # Trial inbox: catches every email so nothing reaches real employees.
+  # For production remove this service and point MAIL_* to the real SMTP.
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+
+volumes:
+  pgdata:
+  storage:

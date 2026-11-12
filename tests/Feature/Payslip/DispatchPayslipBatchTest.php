@@ -12,6 +12,7 @@ use App\Models\Payslip;
 use App\Models\PayslipBatch;
 use App\Models\User;
 use App\Payslip\Exceptions\CannotDispatchBatch;
+use Illuminate\Bus\BatchRepository;
 use Illuminate\Bus\PendingBatch;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
@@ -155,4 +156,39 @@ it('shows send controls and progress on the batch page', function (): void {
         ->assertSee('1 terkirim')
         ->assertSee('1 gagal')
         ->assertSee('aria-valuenow="100"', false);
+});
+
+it('restores the draft when queueing fails, so the batch can be sent again', function (): void {
+    $batch = draftBatch(2);
+
+    $repository = Mockery::mock(BatchRepository::class);
+    $repository->shouldReceive('store')->andThrow(new RuntimeException('queue down'));
+    app()->instance(BatchRepository::class, $repository);
+
+    expect(fn () => app(DispatchPayslipBatch::class)->send($batch))->toThrow(RuntimeException::class, 'queue down');
+
+    $batch->refresh();
+    expect($batch->status)->toBe(PayslipBatchStatus::Draft)
+        ->and($batch->payslips()->where('delivery_status', DeliveryStatus::Pending)->count())->toBe(2);
+});
+
+it('keeps failed payslips failed when requeueing them fails', function (): void {
+    $batch = PayslipBatch::factory()->create(['status' => PayslipBatchStatus::Done, 'total_rows' => 1]);
+    Payslip::factory()->for($batch, 'batch')->create(['delivery_status' => DeliveryStatus::Failed]);
+
+    $repository = Mockery::mock(BatchRepository::class);
+    $repository->shouldReceive('store')->andThrow(new RuntimeException('queue down'));
+    app()->instance(BatchRepository::class, $repository);
+
+    expect(fn () => app(DispatchPayslipBatch::class)->resendFailed($batch))->toThrow(RuntimeException::class);
+
+    $batch->refresh();
+    expect($batch->status)->toBe(PayslipBatchStatus::Done)
+        ->and($batch->payslips()->first()?->delivery_status)->toBe(DeliveryStatus::Failed);
+});
+
+it('lets the database queue wait longer than the send job may run', function (): void {
+    $job = new SendPayslipJob(Payslip::factory()->create());
+
+    expect((int) config('queue.connections.database.retry_after'))->toBeGreaterThan($job->timeout);
 });

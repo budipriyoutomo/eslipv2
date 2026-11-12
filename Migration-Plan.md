@@ -336,4 +336,4 @@ delivery_logs
 | 6. PDF | ✅ | 164 test hijau. Enkripsi diverifikasi dengan `pdftotext`. Library & password = default (D-032), konfirmasi user. D-032…D-034. |
 | 7. Queue Email | ✅ | 184 test hijau. E2E nyata: worker `database` + mailer `log`, 3/3 terkirim, file temp terhapus. Hosting & SMTP per PT masih asumsi (D-035). D-035…D-038. |
 | 8. UI | ✅ | 216 test hijau. Smoke test semua halaman di server lokal: 200. D-039, D-040. |
-| 9. Migrasi & Cutover | 🟨 | Kode & dokumen siap (227 test hijau): import legacy, cleanup terjadwal, `docs/deploy/CHECKLIST.md`. Menunggu dump DB, server, sample Excel & SMTP asli untuk import nyata, paralel run, cutover (D-043). |
+| 9. Migrasi & Cutover | 🟨 | Kode & dokumen siap (227 test hijau): import legacy, cleanup terjadwal, `docs/deploy/CHECKLIST.md`. Review pra-trial: 2 bug queue diperbaiki, `eslip:create-user`, Docker Compose (D-045, D-046). Menunggu dump DB, server, sample Excel & SMTP asli untuk import nyata, paralel run, cutover (D-043). |

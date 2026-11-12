@@ -13,6 +13,7 @@ use App\Payslip\Exceptions\CannotDispatchBatch;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Queue one SendPayslipJob per payslip inside a Laravel Bus batch.
@@ -40,8 +41,10 @@ final readonly class DispatchPayslipBatch
 
     private function dispatch(PayslipBatch $batch, DeliveryStatus $from, bool $requireDraft): Batch
     {
+        $previousStatus = $batch->status;
+
         /** @var list<int> $payslipIds */
-        $payslipIds = DB::transaction(function () use ($batch, $from, $requireDraft): array {
+        $payslipIds = DB::transaction(function () use ($batch, $from, $requireDraft, &$previousStatus): array {
             // Lock the row so a double click cannot queue the same batch twice.
             $locked = PayslipBatch::query()->lockForUpdate()->findOrFail($batch->id);
 
@@ -54,6 +57,8 @@ final readonly class DispatchPayslipBatch
             if ($ids === []) {
                 throw CannotDispatchBatch::nothingToSend();
             }
+
+            $previousStatus = $locked->status;
 
             if ($from !== DeliveryStatus::Pending) {
                 Payslip::query()->whereKey($ids)->update(['delivery_status' => DeliveryStatus::Pending]);
@@ -70,14 +75,24 @@ final readonly class DispatchPayslipBatch
 
         $batchId = $batch->id;
 
-        $busBatch = Bus::batch($jobs)
-            ->name("payslip-batch-{$batchId}")
-            ->onQueue((string) config('eslip.queue'))
-            ->allowFailures()
-            ->finally(static function () use ($batchId): void {
-                PayslipBatch::query()->find($batchId)?->refreshDeliveryCounts();
-            })
-            ->dispatch();
+        try {
+            $busBatch = Bus::batch($jobs)
+                ->name("payslip-batch-{$batchId}")
+                ->onQueue((string) config('eslip.queue'))
+                ->allowFailures()
+                ->finally(static function () use ($batchId): void {
+                    PayslipBatch::query()->find($batchId)?->refreshDeliveryCounts();
+                })
+                ->dispatch();
+        } catch (Throwable $e) {
+            // Nothing was queued: undo the status change so the user can simply try again.
+            DB::transaction(function () use ($batchId, $payslipIds, $from, $previousStatus): void {
+                Payslip::query()->whereKey($payslipIds)->update(['delivery_status' => $from]);
+                PayslipBatch::query()->whereKey($batchId)->update(['status' => $previousStatus]);
+            });
+
+            throw $e;
+        }
 
         $batch->refresh();
         $batch->update(['job_batch_id' => $busBatch->id]);

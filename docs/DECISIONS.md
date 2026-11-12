@@ -351,3 +351,19 @@ Perbedaan perilaku yang ditangani:
   mengandalkan id hardcode (sequence Postgres tidak di-reset saat rollback transaksi test).
 - Menjalankan test ke Postgres: `DB_CONNECTION=pgsql DB_DATABASE=<db_test> php artisan test`
   (pakai database terpisah; RefreshDatabase mengosongkan isinya).
+
+## D-045 — Perbaikan dari review pra-trial · accepted · Fase 9
+- **`retry_after` queue database 90 → 180 detik.** Nilai lama lebih kecil dari `SendPayslipJob::$timeout`
+  (120 dtk): jika SMTP lambat, job yang masih berjalan diambil lagi oleh worker lain → slip terkirim dua kali.
+  Bisa diubah lewat `DB_QUEUE_RETRY_AFTER`, wajib > 120. Ada test penjaga.
+- **Dispatch gagal tidak lagi membuat batch macet.** Status `processing` di-set di transaksi sebelum Bus batch
+  disimpan; jika penyimpanan batch gagal, status batch dan slip dikembalikan (draft / failed) agar bisa dicoba lagi.
+- **`eslip:create-user`**: seeder memakai factory (Faker = dev dependency), sehingga tidak bisa dipakai di image
+  production; perintah ini membuat akun pertama.
+- README berisi sisa teks UTF-16 (`# eslipv2`) di akhir file — dibersihkan.
+
+## D-046 — Docker Compose untuk trial · accepted · Fase 9
+`Dockerfile` multi-stage (vendor → assets → `app` php-fpm 8.4 → `web` nginx) + `docker-compose.yml`
+(db, migrate, app, web, worker, scheduler, mailpit). Panduan: `docs/deploy/DOCKER.md`.
+Config/route/view di-cache di entrypoint dari environment container (`.env.docker`, tidak di-commit).
+Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server trial.
