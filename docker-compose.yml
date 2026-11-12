@@ -23,9 +23,11 @@ services:
       - "8004:80"
     volumes:
       - storage:/var/www/html/storage
-    # Satu network dengan maharasa-postgres → DB_HOST=maharasa-postgres.
     networks:
+      # Satu network dengan maharasa-postgres → DB_HOST=maharasa-postgres.
       - postgres
+      # Satu network dengan nginx-proxy-manager → Forward Hostname `eslipv2`, port 80.
+      - proxy
     # Untuk menjangkau port host, mis. MySQL lama :3308 (eslip:import-legacy).
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -36,6 +38,10 @@ networks:
   # Network milik container maharasa-postgres (dibuat oleh compose Postgres, bukan oleh file ini).
   postgres:
     name: posgresql_default
+    external: true
+  # Network milik nginx-proxy-manager.
+  proxy:
+    name: helpdesk_maharasa-net
     external: true
 
 volumes:

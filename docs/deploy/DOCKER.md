@@ -49,7 +49,9 @@ lalu sesuaikan `name:` di bagian `networks` pada `docker-compose.yml`.
 
 ## 3. Domain (nginx-proxy-manager)
 
-Proxy Host baru: domain e-slip → `http://<IP host>:8004`, aktifkan SSL. Lalu di `.env.docker`:
+Container `eslipv2` ikut network `helpdesk_maharasa-net` (network nginx-proxy-manager). Proxy Host baru:
+domain e-slip → Scheme `http`, Forward Hostname **`eslipv2`**, Forward Port **`80`** (bukan `localhost`/`127.0.0.1`:
+itu menunjuk ke container NPM sendiri → 502). Aktifkan SSL. Lalu di `.env.docker`:
 `APP_URL=https://<domain>`, `SESSION_SECURE_COOKIE=true`, kemudian `docker compose up -d`.
 
 ## Perintah harian

@@ -369,6 +369,7 @@ queue worker, dan scheduler. Entrypoint meng-cache config dari `.env.docker` (ti
 `migrate --force` (`RUN_MIGRATIONS`). Panduan: `docs/deploy/DOCKER.md`.
 - PostgreSQL tidak ikut di stack: memakai container `maharasa-postgres` yang sudah ada (database `eslip_v2`
   terpisah). Container ikut network external `posgresql_default`, `DB_HOST=maharasa-postgres`.
-- Port 8004 (8000–8003 & 8080 sudah dipakai), domain & SSL lewat nginx-proxy-manager.
+- Port 8004 (8000–8003 & 8080 sudah dipakai). Container juga ikut network `helpdesk_maharasa-net` milik
+  nginx-proxy-manager; Proxy Host forward ke `eslipv2:80`.
 - Tanpa Mailpit: trial memakai SMTP asli + `ESLIP_MAIL_OVERRIDE_TO`.
 - Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server.
