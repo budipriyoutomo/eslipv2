@@ -1,4 +1,7 @@
 # syntax=docker/dockerfile:1
+#
+# Production image: one container runs nginx + php-fpm + queue worker + scheduler (supervisord).
+# See docs/deploy/DOCKER.md.
 
 # ---------------------------------------------------------------------------
 # PHP base: PHP 8.4 FPM + the extensions the app needs (docs/deploy/CHECKLIST.md §1)
@@ -34,11 +37,17 @@ COPY --from=vendor /var/www/html/vendor/laravel/framework/src/Illuminate/Paginat
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# Application image: php-fpm (app), queue worker and scheduler all use this.
+# Final image
 # ---------------------------------------------------------------------------
-FROM base AS app
+FROM base
+
+RUN apk add --no-cache nginx supervisor su-exec \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
 
 COPY docker/php/php.ini "$PHP_INI_DIR/conf.d/zz-eslip.ini"
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/eslip-entrypoint
 
 COPY --from=vendor /var/www/html/vendor ./vendor
@@ -51,15 +60,10 @@ RUN composer dump-autoload --optimize --no-dev --no-interaction \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod +x /usr/local/bin/eslip-entrypoint
 
-USER www-data
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD wget -qO- http://127.0.0.1/up >/dev/null || exit 1
 
 ENTRYPOINT ["eslip-entrypoint"]
-CMD ["php-fpm"]
-
-# ---------------------------------------------------------------------------
-# Web server: nginx serving public/ and passing PHP to the app container.
-# ---------------------------------------------------------------------------
-FROM nginx:1.27-alpine AS web
-
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=app /var/www/html/public /var/www/html/public
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]

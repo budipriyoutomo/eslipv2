@@ -362,8 +362,13 @@ Perbedaan perilaku yang ditangani:
   production; perintah ini membuat akun pertama.
 - README berisi sisa teks UTF-16 (`# eslipv2`) di akhir file — dibersihkan.
 
-## D-046 — Docker Compose untuk trial · accepted · Fase 9
-`Dockerfile` multi-stage (vendor → assets → `app` php-fpm 8.4 → `web` nginx) + `docker-compose.yml`
-(db, migrate, app, web, worker, scheduler, mailpit). Panduan: `docs/deploy/DOCKER.md`.
-Config/route/view di-cache di entrypoint dari environment container (`.env.docker`, tidak di-commit).
-Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server trial.
+## D-046 — Docker untuk production · accepted · Fase 9
+Docker hanya untuk server; development lokal tetap tanpa Docker. Satu image/container `eslipv2`
+(`Dockerfile` multi-stage: vendor → assets → php-fpm 8.4 + nginx + supervisord) yang menjalankan web,
+queue worker, dan scheduler. Entrypoint meng-cache config dari `.env.docker` (tidak di-commit) lalu
+`migrate --force` (`RUN_MIGRATIONS`). Panduan: `docs/deploy/DOCKER.md`.
+- PostgreSQL tidak ikut di stack: memakai container `maharasa-postgres` yang sudah ada (database `eslip_v2`
+  terpisah) lewat `host.docker.internal:5432`, agar tidak bergantung pada nama network-nya.
+- Port 8004 (8000–8003 & 8080 sudah dipakai), domain & SSL lewat nginx-proxy-manager.
+- Tanpa Mailpit: trial memakai SMTP asli + `ESLIP_MAIL_OVERRIDE_TO`.
+- Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server.

@@ -1,58 +1,80 @@
-# Docker — trial & server tunggal
+# Docker — production (satu container)
 
-`docker-compose.yml` menjalankan seluruh aplikasi dalam satu host:
+Docker hanya dipakai di server; development lokal tetap tanpa Docker (lihat README).
 
-| Service | Isi |
+Container `eslipv2` menjalankan semuanya lewat supervisord:
+
+| Proses | Fungsi |
 |---|---|
-| `db` | PostgreSQL 16 (volume `pgdata`) |
-| `migrate` | Sekali jalan: `php artisan migrate --force`, lalu berhenti |
-| `app` | PHP 8.4-FPM (Laravel) |
-| `web` | nginx → `http://localhost:8080` (ubah dengan `APP_PORT`) |
+| nginx + php-fpm | Web, port host **8004** (8000–8003 & 8080 sudah dipakai container lain) |
 | `worker` | `queue:work` — mengirim e-slip (queue `payslips`) |
 | `scheduler` | `schedule:work` — cleanup PDF sementara & prune queue (D-042) |
-| `mailpit` | Inbox trial → `http://localhost:8025`. Semua email tertangkap di sini, tidak sampai ke karyawan |
 
-File upload, logo PT, dan log ada di volume `storage` (dipakai bersama `app`, `worker`, `scheduler`).
+Setiap kali container start: config/route/view di-cache dari `.env.docker`, lalu `migrate --force`
+(matikan dengan `RUN_MIGRATIONS=false`). File upload, logo PT, dan log ada di volume `eslipv2_storage`.
 
-## Mulai trial
+**PostgreSQL memakai container yang sudah ada, `maharasa-postgres`**, lewat port host 5432
+(`DB_HOST=host.docker.internal`).
+
+## 1. Siapkan database di `maharasa-postgres` (sekali)
+
+Ganti `postgres` dengan superuser container itu jika berbeda:
+
+```sh
+docker exec -it maharasa-postgres psql -U postgres -c "CREATE USER eslip WITH PASSWORD 'ganti-password-ini';"
+docker exec -it maharasa-postgres psql -U postgres -c "CREATE DATABASE eslip_v2 OWNER eslip ENCODING 'UTF8';"
+```
+
+## 2. Jalankan
 
 ```sh
 cp .env.docker.example .env.docker
-# 1. Ganti DB_PASSWORD dan POSTGRES_PASSWORD (harus sama)
-# 2. Buat APP_KEY lalu tempel ke .env.docker:
-docker compose run --rm --no-deps --entrypoint php app artisan key:generate --show
+# isi DB_PASSWORD, SMTP (MAIL_<AKUN>_*), dan untuk trial ESLIP_MAIL_OVERRIDE_TO=<inbox test>
+docker compose build
+docker compose run --rm app php artisan key:generate --show    # tempel hasilnya ke APP_KEY
 
-docker compose up -d --build
-docker compose ps                     # migrate = exited (0), lainnya running
+docker compose up -d
+docker compose logs -f                                          # tunggu "migrated" / supervisord running
 
 # Akun login pertama (password ditanya)
-docker compose exec app php artisan eslip:create-user superadmin --name="Super Admin"
+docker compose exec -u www-data app php artisan eslip:create-user superadmin --name="Super Admin"
 ```
 
-Buka `http://localhost:8080`, login, buat PT di menu **PT** (mailer mana pun — di trial semuanya mengarah ke
-Mailpit), upload Excel, kirim, lalu lihat emailnya di `http://localhost:8025`.
+Buka `http://<server>:8004`. Selama trial isi `ESLIP_MAIL_OVERRIDE_TO`, sehingga semua slip masuk ke inbox test
+(alamat karyawan asli tetap tercatat di Riwayat).
+
+Jika start gagal dengan *connection refused / timeout* ke `host.docker.internal:5432`, firewall host (mis. ufw)
+memblokir trafik dari bridge Docker ke host. Izinkan, atau sambungkan container ke network `maharasa-postgres`
+(`docker inspect maharasa-postgres --format '{{json .NetworkSettings.Networks}}'`), deklarasikan network itu
+sebagai `external` di compose, dan set `DB_HOST=maharasa-postgres`.
+
+## 3. Domain (nginx-proxy-manager)
+
+Proxy Host baru: domain e-slip → `http://<IP host>:8004`, aktifkan SSL. Lalu di `.env.docker`:
+`APP_URL=https://<domain>`, `SESSION_SECURE_COOKIE=true`, kemudian `docker compose up -d`.
 
 ## Perintah harian
 
-```sh
-docker compose logs -f worker                 # proses pengiriman
-docker compose exec app php artisan <cmd>     # artisan
-docker compose restart worker                 # setelah ubah .env.docker (config di-cache saat container start)
-docker compose up -d --build                  # setelah update kode (migrate jalan otomatis)
-```
-
-Import data lama (DB MySQL di host = `host.docker.internal`; di Linux tambahkan
-`extra_hosts: ["host.docker.internal:host-gateway"]` pada service yang menjalankan perintah):
+Jalankan artisan sebagai `www-data` agar file cache/log tidak dimiliki root:
 
 ```sh
-docker compose exec app php artisan eslip:import-legacy --dry-run --template=4:xft
+docker compose logs -f                                   # web, worker, scheduler
+docker compose exec -u www-data app php artisan <cmd>
+docker compose up -d                                     # setelah ubah .env.docker
+git pull && docker compose up -d --build                 # update kode (migrate otomatis)
 ```
 
-Untuk `--logo-dir`, mount folder logo lama ke container `app` lebih dulu (mis. `- /path/eslip/image:/legacy-image:ro`).
+Import data lama — MySQL 8 di server ini dipublish di port host 3308 (`LEGACY_DB_PORT=3308`); pastikan itu memang
+database e-slip lama:
 
-## Menuju production
+```sh
+docker compose exec -u www-data app php artisan eslip:import-legacy --dry-run --template=4:xft
+```
 
-- Hapus service `mailpit`; isi `MAIL_<AKUN>_*` dengan SMTP asli. Untuk paralel run isi `ESLIP_MAIL_OVERRIDE_TO`.
-- `APP_URL` = domain asli; pasang HTTPS di reverse proxy depan `web` dan set `SESSION_SECURE_COOKIE=true`.
-- Jangan expose port `db`. Backup volume `pgdata` (`pg_dump`) dan `storage`.
+Untuk `--logo-dir`, mount folder logo lama ke container lebih dulu (mis. `- /path/eslip/image:/legacy-image:ro`).
+
+## Backup
+
+- Database: `docker exec maharasa-postgres pg_dump -U eslip eslip_v2 > eslip_v2.sql`
+- File: volume `eslipv2_storage` (logo PT; PDF slip hanya sementara).
 - `DB_QUEUE_RETRY_AFTER` harus tetap > 120 detik (timeout `SendPayslipJob`), lihat D-045.
