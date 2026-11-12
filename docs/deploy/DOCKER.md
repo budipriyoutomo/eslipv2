@@ -13,8 +13,8 @@ Container `eslipv2` menjalankan semuanya lewat supervisord:
 Setiap kali container start: config/route/view di-cache dari `.env.docker`, lalu `migrate --force`
 (matikan dengan `RUN_MIGRATIONS=false`). File upload, logo PT, dan log ada di volume `eslipv2_storage`.
 
-**PostgreSQL memakai container yang sudah ada, `maharasa-postgres`**, lewat port host 5432
-(`DB_HOST=host.docker.internal`).
+**PostgreSQL memakai container yang sudah ada, `maharasa-postgres`**: container `eslipv2` ikut network
+external `posgresql_default` sehingga `DB_HOST=maharasa-postgres`. Port 5432 tidak perlu dibuka ke publik.
 
 ## 1. Siapkan database di `maharasa-postgres` (sekali)
 
@@ -43,10 +43,9 @@ docker compose exec -u www-data app php artisan eslip:create-user superadmin --n
 Buka `http://<server>:8004`. Selama trial isi `ESLIP_MAIL_OVERRIDE_TO`, sehingga semua slip masuk ke inbox test
 (alamat karyawan asli tetap tercatat di Riwayat).
 
-Jika start gagal dengan *connection refused / timeout* ke `host.docker.internal:5432`, firewall host (mis. ufw)
-memblokir trafik dari bridge Docker ke host. Izinkan, atau sambungkan container ke network `maharasa-postgres`
-(`docker inspect maharasa-postgres --format '{{json .NetworkSettings.Networks}}'`), deklarasikan network itu
-sebagai `external` di compose, dan set `DB_HOST=maharasa-postgres`.
+Jika `docker compose up` gagal dengan *network posgresql_default declared as external, but could not be found*,
+cek nama network yang benar: `docker inspect maharasa-postgres --format '{{json .NetworkSettings.Networks}}'`
+lalu sesuaikan `name:` di bagian `networks` pada `docker-compose.yml`.
 
 ## 3. Domain (nginx-proxy-manager)
 

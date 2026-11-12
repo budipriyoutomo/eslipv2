@@ -368,7 +368,7 @@ Docker hanya untuk server; development lokal tetap tanpa Docker. Satu image/cont
 queue worker, dan scheduler. Entrypoint meng-cache config dari `.env.docker` (tidak di-commit) lalu
 `migrate --force` (`RUN_MIGRATIONS`). Panduan: `docs/deploy/DOCKER.md`.
 - PostgreSQL tidak ikut di stack: memakai container `maharasa-postgres` yang sudah ada (database `eslip_v2`
-  terpisah) lewat `host.docker.internal:5432`, agar tidak bergantung pada nama network-nya.
+  terpisah). Container ikut network external `posgresql_default`, `DB_HOST=maharasa-postgres`.
 - Port 8004 (8000–8003 & 8080 sudah dipakai), domain & SSL lewat nginx-proxy-manager.
 - Tanpa Mailpit: trial memakai SMTP asli + `ESLIP_MAIL_OVERRIDE_TO`.
 - Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server.

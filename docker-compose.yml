@@ -1,6 +1,6 @@
 # E-Slip v2 — production, satu container (nginx + php-fpm + queue worker + scheduler).
 #
-# PostgreSQL memakai container `maharasa-postgres` yang sudah ada, lewat port host 5432.
+# PostgreSQL memakai container `maharasa-postgres` yang sudah ada, lewat network `posgresql_default`.
 # Migrasi database jalan otomatis setiap container start.
 #
 #   cp .env.docker.example .env.docker      # isi APP_KEY, DB_*, SMTP
@@ -23,11 +23,20 @@ services:
       - "8004:80"
     volumes:
       - storage:/var/www/html/storage
-    # Agar container bisa menjangkau port host (maharasa-postgres :5432, MySQL lama :3308).
+    # Satu network dengan maharasa-postgres → DB_HOST=maharasa-postgres.
+    networks:
+      - postgres
+    # Untuk menjangkau port host, mis. MySQL lama :3308 (eslip:import-legacy).
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # Lebih lama dari stopwaitsecs worker (150 s) supaya email yang sedang dikirim selesai.
     stop_grace_period: 160s
+
+networks:
+  # Network milik container maharasa-postgres (dibuat oleh compose Postgres, bukan oleh file ini).
+  postgres:
+    name: posgresql_default
+    external: true
 
 volumes:
   storage:
