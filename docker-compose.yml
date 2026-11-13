@@ -19,8 +19,9 @@ services:
     restart: unless-stopped
     env_file: .env.docker
     ports:
-      # 8000-8003 dan 8080 sudah dipakai container lain di server ini.
-      - "8004:80"
+      # Hanya dari server sendiri (cek: curl http://127.0.0.1:8004/up). Akses publik lewat
+      # nginx-proxy-manager di network helpdesk_maharasa-net; app mempercayai header X-Forwarded-*.
+      - "127.0.0.1:8004:80"
     volumes:
       - storage:/var/www/html/storage
     networks:

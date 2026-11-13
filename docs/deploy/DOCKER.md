@@ -6,7 +6,7 @@ Container `eslipv2` menjalankan semuanya lewat supervisord:
 
 | Proses | Fungsi |
 |---|---|
-| nginx + php-fpm | Web, port host **8004** (8000–8003 & 8080 sudah dipakai container lain) |
+| nginx + php-fpm | Web. Publik lewat nginx-proxy-manager; port **8004** hanya di `127.0.0.1` server (untuk cek) |
 | `worker` | `queue:work` — mengirim e-slip (queue `payslips`) |
 | `scheduler` | `schedule:work` — cleanup PDF sementara & prune queue (D-042) |
 
@@ -40,7 +40,7 @@ docker compose logs -f                                          # tunggu "migrat
 docker compose exec -u www-data app php artisan eslip:create-user superadmin --name="Super Admin"
 ```
 
-Buka `http://<server>:8004`. Selama trial isi `ESLIP_MAIL_OVERRIDE_TO`, sehingga semua slip masuk ke inbox test
+Cek dari server: `curl -I http://127.0.0.1:8004/up` (harus 200), lalu buka lewat domain (langkah 3). Selama trial isi `ESLIP_MAIL_OVERRIDE_TO`, sehingga semua slip masuk ke inbox test
 (alamat karyawan asli tetap tercatat di Riwayat).
 
 Jika `docker compose up` gagal dengan *network posgresql_default declared as external, but could not be found*,
@@ -53,6 +53,12 @@ Container `eslipv2` ikut network `helpdesk_maharasa-net` (network nginx-proxy-ma
 domain e-slip → Scheme `http`, Forward Hostname **`eslipv2`**, Forward Port **`80`** (bukan `localhost`/`127.0.0.1`:
 itu menunjuk ke container NPM sendiri → 502). Aktifkan SSL. Lalu di `.env.docker`:
 `APP_URL=https://<domain>`, `SESSION_SECURE_COOKIE=true`, kemudian `docker compose up -d`.
+
+Aplikasi mempercayai header `X-Forwarded-*` dari proxy (`trustProxies` di `bootstrap/app.php`), sehingga URL,
+CSS/JS, dan form memakai `https`. Karena itu port 8004 sengaja hanya di-bind ke `127.0.0.1`.
+
+Di NPM, **matikan "Cache Assets"** pada Proxy Host ini: opsi itu membuat file statis (`favicon.ico`, CSS, JS)
+diproxy lewat blok lokasi terpisah dan bisa menghasilkan 502 walau halaman utama normal.
 
 ## Perintah harian
 

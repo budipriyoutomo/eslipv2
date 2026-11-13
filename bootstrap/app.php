@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
         ]);
 
+        // Behind nginx-proxy-manager (TLS terminates there): trust its X-Forwarded-* headers so URLs,
+        // assets and form actions use https. The app port is only reachable through the proxy / localhost.
+        $middleware->trustProxies(at: '*');
+
         $middleware->redirectGuestsTo(fn (): string => route('login'));
         $middleware->redirectUsersTo(fn (): string => route('dashboard'));
     })

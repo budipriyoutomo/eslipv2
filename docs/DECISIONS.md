@@ -371,5 +371,7 @@ queue worker, dan scheduler. Entrypoint meng-cache config dari `.env.docker` (ti
   terpisah). Container ikut network external `posgresql_default`, `DB_HOST=maharasa-postgres`.
 - Port 8004 (8000–8003 & 8080 sudah dipakai). Container juga ikut network `helpdesk_maharasa-net` milik
   nginx-proxy-manager; Proxy Host forward ke `eslipv2:80`.
+- TLS berhenti di nginx-proxy-manager → `trustProxies(at: '*')` di `bootstrap/app.php` agar URL/aset/form memakai
+  https (tanpa ini: Mixed Content, CSS/JS diblokir browser). Aman karena port 8004 hanya di-bind ke `127.0.0.1`.
 - Tanpa Mailpit: trial memakai SMTP asli + `ESLIP_MAIL_OVERRIDE_TO`.
 - Image belum di-build di mesin development (Docker tidak terpasang) — build pertama di server.
